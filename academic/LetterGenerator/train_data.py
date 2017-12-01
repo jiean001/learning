@@ -2,6 +2,7 @@ from glob import glob
 import os
 from utils import *
 import numpy as np
+import random
 
 DEBUG = False
 class Data:
@@ -100,3 +101,6 @@ class Data:
 
     def get_len(self):
         return self.img_data.__len__()
+
+    def shuffle(self):
+        random.shuffle(self.img_data)
