@@ -26,6 +26,11 @@ def transform(image):
     cropped_image = scipy.misc.imresize(image, [96, 96])
     return np.array(cropped_image)/127.5 - 1.
 
+def image_manifold_size(num_images):
+    manifold_h = int(np.floor(np.sqrt(num_images)))
+    manifold_w = int(np.ceil(np.sqrt(num_images)))
+    assert manifold_h * manifold_w == num_images
+    return manifold_h, manifold_w
 
 def save_images(images, size, image_path):
     return imsave(inverse_transform(images), size, image_path)

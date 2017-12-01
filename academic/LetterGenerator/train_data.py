@@ -1,6 +1,7 @@
 from glob import glob
 import os
 from utils import *
+import numpy as np
 
 DEBUG = False
 class Data:
@@ -95,4 +96,7 @@ class Data:
             batch_labels.append(label_img)
             a = sess.run(get_4d_pic(sample_img, standard_img))
             batch_imgs.append(a)
-        return batch_imgs, batch_labels
+        return batch_imgs, np.array(batch_labels).astype(np.float32)
+
+    def get_len(self):
+        return self.img_data.__len__()

@@ -16,7 +16,7 @@ flags.DEFINE_integer("epoch", 300, "Epoch to train [25]")
 flags.DEFINE_float("learning_rate", 0.0002, "Learning rate of for adam [0.0002]")
 # todo
 flags.DEFINE_float("beta1", 0.5, "Momentum term of adam [0.5]")
-flags.DEFINE_integer("train_size", np.inf, "The size of train images [np.inf]")
+flags.DEFINE_integer("train_size", 200, "The size of train images [np.inf]")
 flags.DEFINE_integer("batch_size", 100, "The size of batch images [64]")
 flags.DEFINE_integer("input_height", 28, "The size of image to use (will be center cropped). [108]")
 flags.DEFINE_integer("input_width", 28, "The size of image to use (will be center cropped). "
@@ -63,6 +63,8 @@ def main():
         os.makedirs(FLAGS.checkpoint_dir)
     if not os.path.exists(FLAGS.train_config_path):
         os.makedirs(FLAGS.train_config_path)
+    if not os.path.exists(FLAGS.generator_dir):
+        os.makedirs(FLAGS.generator_dir)
 
     whole_black_path = os.path.join(FLAGS.samples_path, FLAGS.black_path)
     whole_white_path = os.path.join(FLAGS.samples_path, FLAGS.white_path)
