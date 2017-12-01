@@ -11,7 +11,7 @@ class LetterGenerator:
                  output_height=28, output_width=28, cnn_f_dim=64,batch_size=500,
                  fc_dim=1024, input_fname_patter='*.jpg', checkpoint_dir="./checkpoint", generator_dir="./generator"):
         self.sess = sess
-        self.batch_size = batch_size
+        self.batch_size = None  #batch_size
 
         self.input_height = input_height
         self.input_width = input_width
@@ -144,7 +144,7 @@ class LetterGenerator:
 
     @property
     def model_dir(self):
-        return "{}_{}_{}_{}".format(self.gt_dataset_name, self.batch_size, self.output_height, self.output_width)
+        return "{}_{}_{}_{}".format("luxb_test", self.batch_size, self.output_height, self.output_width)
 
     def saver(self, checkpoint_dir, step):
         model_name = "LETTERGENERATOE.model"

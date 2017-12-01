@@ -38,8 +38,7 @@ class Data:
             self.fp = open(self.train_config_file, "w+")
             self.save_train_config()
             self.fp.close()
-        else:
-            self.init_img_data()
+        self.init_img_data()
 
     # inital the dictionary
     def get_style_dictionary(self):
@@ -91,7 +90,7 @@ class Data:
         batch_labels.clear()
         for line in lines:
             sample_img = imread(os.path.join(self.sampler_images, line[0]), grayscale=False)
-            standard_img = imread(os.path.join(self.standard_pic_dir, "b_255", line[1]), grayscale=True)
+            standard_img = imread(os.path.join(self.standard_pic_dir, line[1]), grayscale=True)
             label_img = imread(os.path.join(self.sampler_images, line[2]), grayscale=False)
             batch_labels.append(label_img)
             a = sess.run(get_4d_pic(sample_img, standard_img))
