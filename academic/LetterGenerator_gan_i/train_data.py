@@ -96,7 +96,7 @@ class Data:
         assert index*self.batch < self.img_data.__len__()
         lines = self.img_data[index*self.batch: min((index+1)*self.batch, len(self.img_data))]
         batch_labels = []
-        # batch_labels.clear()
+        batch_labels.clear()
         for line in lines:
             label_img = get_image(os.path.join(self.sampler_images, line[2]), input_height=input_height,
                                   input_width=input_width, resize_height=resize_height,
@@ -113,24 +113,21 @@ class Data:
                    resize_height, resize_width, crop)
     """
 
-    '''
     def get_batch_data(self, count, sess):
         assert count*self.batch < self.img_data.__len__()
         lines = self.img_data[count*self.batch: min((count+1)*self.batch, len(self.img_data))]
-        batch_imgs = []
+        #batch_imgs = []
         batch_labels = []
-        batch_imgs.clear()
-        batch_labels.clear()
         for line in lines:
-            sample_img = imread(os.path.join(self.sampler_images, line[0]), grayscale=False)
-            standard_img = imread(os.path.join(self.standard_pic_dir, line[1]), grayscale=True)
+            #sample_img = imread(os.path.join(self.sampler_images, line[0]), grayscale=False)
+            #standard_img = imread(os.path.join(self.standard_pic_dir, line[1]), grayscale=True)
             label_img = imread(os.path.join(self.sampler_images, line[2]), grayscale=False)
-            batch_labels.append(label_img)
-            a = sess.run(get_4d_pic(sample_img, standard_img))
-            batch_imgs.append(a)
-        return batch_imgs, np.array(batch_labels).astype(np.float32)
-    '''
-
+            batch_labels.append(np.array(label_img) / 127.5 - 1.)
+           # _tensor_img = sess.run(get_4d_pic(sample_img, standard_img))
+           # tensor_img = np.array(_tensor_img) / 127.5 - 1.
+           # batch_imgs.append(tensor_img)
+        # return batch_imgs, np.array(batch_labels).astype(np.float32)
+        return None, np.array(batch_labels).astype(np.float32)
     def get_len(self):
         return self.img_data.__len__()
 

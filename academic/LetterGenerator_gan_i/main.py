@@ -136,7 +136,6 @@ def main(_):
         '''
 
         #dcgan.train(FLAGS, train_data=None)
-        print("my input")
         dcgan.train(config=FLAGS, train_data=train_data_white)
         '''luxb add begin'''
         #if FLAGS.train_black:

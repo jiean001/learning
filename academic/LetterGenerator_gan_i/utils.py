@@ -248,3 +248,16 @@ def image_manifold_size(num_images):
     manifold_w = int(np.ceil(np.sqrt(num_images)))
     assert manifold_h * manifold_w == num_images
     return manifold_h, manifold_w
+
+
+def get_4d_pic(rgb_pic, gray_pic):
+    assert rgb_pic.shape[0] == gray_pic.shape[0] and rgb_pic.shape[1] == gray_pic.shape[1]
+    four_d_pic = concat([rgb_pic, gray_pic.reshape(gray_pic.shape[0], gray_pic.shape[1], 1)], axis=2)
+    return four_d_pic
+
+if "concat_v2" in dir(tf):
+   def concat(tensors, axis, *args, **kwargs):
+        return tf.concat_v2(tensors, axis, *args, **kwargs)
+else:
+    def concat(tensors, axis, *args, **kwargs):
+        return tf.concat(tensors, axis, *args, **kwargs)

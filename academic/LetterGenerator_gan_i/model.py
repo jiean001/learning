@@ -271,7 +271,7 @@ class DCGAN(object):
                 sample_inputs = np.array(sample).astype(np.float32)
         else:
             train_data.shuffle()
-            sample_inputs = train_data.get_batch_data(0)
+            _, sample_inputs = train_data.get_batch_data(0, self.sess)
 
         counter = 1
         start_time = time.time()
@@ -289,7 +289,7 @@ class DCGAN(object):
                 _len = int(self.data.__len__() / config.batch_size) - 1
                 batch_idxs = _len  # min(413, 100000) // config.batch_size
             else:
-                print("my data")
+                print("my date")
                 batch_idxs = min(int(math.ceil(train_data.get_len()) / config.batch_size) - 1, config.train_size)
             for idx in xrange(0, batch_idxs):
                 if not train_data:
@@ -307,7 +307,7 @@ class DCGAN(object):
                     else:
                         batch_images = np.array(batch).astype(np.float32)
                 else:
-                    batch_images = train_data.get_batch_data(idx)
+                    _, batch_images = train_data.get_batch_data(idx, self.sess)
                 batch_z = np.random.uniform(-1, 1, [config.batch_size, self.z_dim]) \
                     .astype(np.float32)
 
