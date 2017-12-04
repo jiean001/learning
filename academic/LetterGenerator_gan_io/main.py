@@ -4,6 +4,7 @@ import numpy as np
 from model import DCGAN
 from utils import pp, visualize, to_json, show_all_variables
 from train_data import Data
+from test_data import TestData
 
 import tensorflow as tf
 
@@ -65,6 +66,8 @@ def main(_):
         os.makedirs(FLAGS.generator_dir)
     if not os.path.exists("runconfig"):
         os.makedirs("runconfig")
+    if not os.path.exists("test"):
+        os.makedirs("test")
 
     whole_black_path = os.path.join(FLAGS.samples_path, FLAGS.black_path)
     whole_white_path = os.path.join(FLAGS.samples_path, FLAGS.white_path)
@@ -94,6 +97,15 @@ def main(_):
     #gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.333)
     run_config = tf.ConfigProto()
     run_config.gpu_options.allow_growth=True
+
+    test_data = TestData(
+        test_images="./data/m_dcgan/test/format_255",
+        standard_pic_dir=whole_standard_white_path,
+        input_fname_pattern=FLAGS.input_fname_pattern,
+        test_config_file="./runconfig/format_255_test_config.txt",
+        create_frain_config=True,
+        batch=FLAGS.batch_size
+    )
 
     with tf.Session(config=run_config) as sess:
         if FLAGS.dataset == 'mnist':
@@ -136,7 +148,7 @@ def main(_):
         '''
 
         #dcgan.train(FLAGS, train_data=None)
-        dcgan.train(config=FLAGS, train_data=train_data_white)
+        dcgan.train(config=FLAGS, train_data=train_data_white, test_data=test_data)
         '''luxb add begin'''
         #if FLAGS.train_black:
             #dcgan.train(config=FLAGS, train_data=train_data_black)
@@ -154,7 +166,6 @@ def main(_):
         # Below is codes for visualization
         OPTION = 1
         #visualize(sess, dcgan, FLAGS, OPTION)
-        print("===========================")
 
 if __name__ == '__main__':
     tf.app.run()

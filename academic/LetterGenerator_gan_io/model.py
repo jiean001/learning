@@ -6,6 +6,7 @@ from glob import glob
 import tensorflow as tf
 import numpy as np
 from six.moves import xrange
+from test_data import TestData
 
 from ops import *
 from utils import *
@@ -114,7 +115,7 @@ class DCGAN(object):
 
         #self.z = tf.placeholder(
         #    tf.float32, [None, self.z_dim], name='z')
-        self.z_sum = histogram_summary("z", self.z)
+        # self.z_sum = histogram_summary("z", self.z)
 
 
         self.G                  = self.generator(self.z, self.y)
@@ -159,7 +160,16 @@ class DCGAN(object):
 
         self.saver = tf.train.Saver()
 
-    def train(self, config, train_data):
+    def test(self, test_data):
+        for idx in range(test_data.get_len()):
+            first_imgs, standard_imgs = test_data.get_batch_data(idx)
+            batch_z_ = self.sess.run(get_4d_pic(first_imgs, standard_imgs, axis=3))
+            samples = self.sess.run(self.sampler, feed_dict={self.z: batch_z_})
+            save_images(samples, image_manifold_size(samples.shape[0]),
+                        './test/test_arange_%s.png' % (idx))
+
+
+    def train(self, config, train_data, test_data):
         '''
         d_optim = tf.train.AdamOptimizer(config.learning_rate, beta1=config.beta1) \
             .minimize(self.d_loss, var_list=self.d_vars)
@@ -261,7 +271,7 @@ class DCGAN(object):
                       % (epoch, idx, batch_idxs,
                          time.time() - start_time, loss))
 
-                if np.mod(counter, 20) == 1:
+                if np.mod(counter, 50) == 1:
                     try:
                         samples, loss = self.sess.run(
                             [self.sampler, self.loss],
@@ -279,8 +289,14 @@ class DCGAN(object):
                         print("one pic error!...")
                         return
 
-                if np.mod(counter, 500) == 2:
+                if np.mod(counter, 2000) == 0:
                     self.save(config.checkpoint_dir, counter)
+            for idx in range(test_data.get_len()):
+                first_imgs, standard_imgs = test_data.get_batch_data(idx)
+                batch_z_ = self.sess.run(get_4d_pic(first_imgs, standard_imgs, axis=3))
+                samples = self.sess.run(self.sampler, feed_dict={self.z: batch_z_})
+                save_images(samples, image_manifold_size(samples.shape[0]),
+                            './test/test_epoch%s_%s.jpg' % (epoch, idx))
 
     def discriminator(self, image, y=None, reuse=False):
         with tf.variable_scope("discriminator") as scope:
