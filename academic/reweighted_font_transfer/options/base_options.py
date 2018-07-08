@@ -24,6 +24,8 @@ class BaseOptions():
         self.parser.add_argument('--checkpoints_dir', type=str, default='./checkpoints', help='models are saved here')
         self.parser.add_argument('--name', type=str, default='experiment_name',
                                  help='name of the experiment. It decides where to store samples and models')
+        self.parser.add_argument('--log_dir', type=str, default='log',
+                                 help='name of the experiment. It decides where to store samples and models')
 
         self.parser.add_argument('--fineSize', type=int, default=256, help='then crop to this size')
         self.parser.add_argument('--loadSize', type=int, default=286, help='scale images to this size')
@@ -44,6 +46,7 @@ class BaseOptions():
         self.parser.add_argument('--use_dropout', action='store_true', help='use dropout for the generator')
         self.parser.add_argument('--classifier', action='store_true', help='use dropout for the generator')
         self.parser.add_argument('--nThreads', default=2, type=int, help='# threads for loading data')
+        self.parser.add_argument('--embedding_freq', default=20, type=int, help='# threads for loading data')
 
         self.initialized = True
 
@@ -67,9 +70,11 @@ class BaseOptions():
             print('%s: %s' % (str(k), str(v)))
         print('-------------- End ----------------')
 
+        self.opt.log_dir = os.path.join(self.opt.checkpoints_dir, self.opt.name, self.opt.log_dir)
         # save to the disk
         expr_dir = os.path.join(self.opt.checkpoints_dir, self.opt.name)
         mkdirs(expr_dir)
+        mkdirs(self.opt.log_dir)
         file_name = os.path.join(expr_dir, 'opt.txt')
         with open(file_name, 'wt') as opt_file:
             opt_file.write('------------ Options -------------\n')

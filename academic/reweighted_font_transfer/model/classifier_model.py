@@ -80,7 +80,7 @@ class Classifier_Model(BaseModel):
         self.forward()
 
     def get_current_errors(self):
-        return OrderedDict([('loss', self.loss.data[0])])
+        return OrderedDict([('loss', self.loss.item())])
 
     def save(self, label):
         self.save_network(self.Classifier, 'Classifier', label, gpu_ids=self.gpu_ids)
@@ -92,3 +92,12 @@ class Classifier_Model(BaseModel):
             param_group['lr'] = lr
         print('update learning rate: %f -> %f' % (self.old_lr, lr))
         self.old_lr = lr
+
+    def get_embedding_para(self):
+        return self.output, self._label, self._input
+
+    def get_model(self):
+        return self.Classifier
+
+    def get_input(self):
+        return self._input
