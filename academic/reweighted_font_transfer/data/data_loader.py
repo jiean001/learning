@@ -43,10 +43,10 @@ class Classifier_DataLoader(BaseDataLoader):
             ]),
         }
 
-        dataset = {x: dt.ImageFolder(os.path.join(opt.dataroot, x), transform[x]) for x in ['train', 'val']}
+        dataset = {x: dt.ImageFolder(os.path.join(opt.dataroot, x), transform[x]) for x in ['train', 'val', 'test']}
 
         data_loader = {x: torch.utils.data.DataLoader(dataset[x], batch_size=self.opt.batchSize, shuffle=not self.opt.serial_batches, num_workers=int(self.opt.nThreads))
-                              for x in ['train', 'val']}
+                              for x in ['train', 'val', 'test']}
 
         self.dataset = dataset
         self._data = data_loader

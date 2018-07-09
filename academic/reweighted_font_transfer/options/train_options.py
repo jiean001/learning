@@ -27,5 +27,3 @@ class TrainOptions(BaseOptions):
         self.parser.add_argument('--lr', type=float, default=0.0002, help='initial learning rate for adam')
         self.parser.add_argument('--continue_train', action='store_true',
                                  help='continue training: load the latest model')
-
-        self.isTrain = True
