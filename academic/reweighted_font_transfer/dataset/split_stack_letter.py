@@ -12,8 +12,8 @@
 #########################################################
 
 
-from reweighted_font_transfer.utils.img_util import *
-from reweighted_font_transfer.utils.dir_util import *
+from utils.img_util import *
+from utils.dir_util import *
 
 
 # 切割图片
@@ -71,4 +71,10 @@ class MCGAN_DATA:
 
 
 if __name__ == '__main__':
-    mcgan = MCGAN_DATA()  # (source_dir=r'.', target_together_dir=r'./together', target_separate_dir=r'./separate')
+    # pc
+    source_dir = r'/home/xiongbo/datasets/'
+    target_together_dir = r'/home/xiongbo/datasets/TOGETHER'
+    target_separate_dir = r'/home/xiongbo/datasets/separate'
+    mcgan = MCGAN_DATA(source_dir=source_dir, target_together_dir=target_together_dir, target_separate_dir=target_separate_dir)
+
+    # mcgan = MCGAN_DATA()  # (source_dir=r'.', target_together_dir=r'./together', target_separate_dir=r'./separate')

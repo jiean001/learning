@@ -1,7 +1,7 @@
 #!/bin/bash -f
 
-DATA=A
-DATASET="/home/xiongbo/datasets/ft6_1/${DATA}/"
+DATA=Capital64
+DATASET="/home/xiongbo/datasets/TOGETHER/${DATA}/"
 experiment_dir="Classifier_pretrain"
 
 MODEL=classifier
@@ -34,7 +34,8 @@ CUDA_VISIBLE_DEVICES=${CUDA_ID} python ../controller/train_classifier.py --datar
 						 --norm $NORM --input_nc $IN_NC --output_nc $O_NC --fineSize $FINESIZE --loadSize $LOADSIZE --use_dropout \
 						 --niter $NITER --niter_decay $NITERD --batchSize $BATCHSIZE --save_epoch_freq $EPOCH_FREQ \
 						 --gpu_ids 0 --which_epoch 40 --classifier --checkpoints_dir $CHECKPOINTS \
-						 --use_tensorboardX --serial_batches --embedding_freq $EMBEDDING_FREQ
+						 --use_tensorboardX --embedding_freq $EMBEDDING_FREQ \
+						 # --serial_batches
 
 
 

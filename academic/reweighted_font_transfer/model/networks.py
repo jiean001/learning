@@ -53,7 +53,7 @@ def conv_norm_relu_module(norm_layer, input_nc, ngf, kernel_size, padding, strid
 
 def fc_module(input_nc, output_nc):
     # model = [nn.Linear(input_nc, output_nc), nn.Softmax()]
-    model = [nn.Linear(input_nc, output_nc)]
+    model = [nn.Linear(int(input_nc), int(output_nc))]
     return model
 
 

@@ -34,6 +34,7 @@ class TB_Visualizer:
             self.writer.add_scalar(scalar_name, scalar_value, scalar_x)
 
     def add_embedding(self, out, label, data, scalar_x):
+        # print(label.data[:10])
         if self.use_gpu:
             out = torch.cat((out.data, torch.ones(len(out), 1).cuda()), 1)
         else:

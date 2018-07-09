@@ -36,4 +36,9 @@ class Format_Pytorch_DataSet:
             self.iterate_dir(path, deal_dir=self.deal_dir, deal_file='pass')
 
 if __name__ == '__main__':
-    mcgan = Format_Pytorch_DataSet(source_dir=r'/home/share/dataset/MCGAN/TOGETHER/Capitals_colorGrad64/train')
+    # pc
+    source_dir = r'/home/xiongbo/datasets/TOGETHER'
+    # 218
+    # source_dir = r'/home/share/dataset/MCGAN/TOGETHER'
+
+    mcgan = Format_Pytorch_DataSet(source_dir=source_dir)

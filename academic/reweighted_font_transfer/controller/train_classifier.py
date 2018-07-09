@@ -30,6 +30,8 @@ tb_v = TB_Visualizer(log_dir=opt.log_dir, comment='classifier_embedding_training
 for epoch in range(1, opt.niter + opt.niter_decay + 1):
     epoch_start_time = time.time()
     for i, data in enumerate(dataset['train']):
+        # print(data[1])
+
         iter_start_time = time.time()
         model.set_input(data)
         model.optimize_parameters()
@@ -40,11 +42,11 @@ for epoch in range(1, opt.niter + opt.niter_decay + 1):
 
         tb_v.add_loss(errors=errors, scalar_x=total_steps)
 
-        if opt.use_tensorboardX:
+        if opt.use_tensorboardX and i % opt.embedding_freq == 0:
             _out, _label, _input = model.get_embedding_para()
             tb_v.add_embedding(_out, _label, _input, total_steps)
 
-        if total_steps == 0:
+        if total_steps == -1:
             tb_v.add_graph(model=model.get_model(), dummy_input=model.get_input())
 
         if total_steps % opt.save_latest_freq == 0:
