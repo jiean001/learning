@@ -23,19 +23,24 @@ data_loader = CreateDataLoader(opt)
 dataset = data_loader.load_data()
 model = create_model(opt)
 total_steps = 0
-tb_v = TB_Visualizer(log_dir=opt.log_dir, comment='classifier_embedding_training', use_tensorboardX=opt.use_tensorboardX)
-for epoch in range(1, opt.niter + opt.niter_decay + 1):
+tb_v = TB_Visualizer(log_dir=opt.log_dir, comment=opt.ftX_comment, use_tensorboardX=opt.use_tensorboardX)
+start_epoch = 1
+# 继续训练
+if opt.continue_train:
+    start_epoch += int(opt.which_epoch)
+
+for epoch in range(start_epoch, opt.niter + opt.niter_decay + 1):
     epoch_start_time = time.time()
     for i, data in enumerate(dataset['train']):
         # print(data[1])
-        print('epoch: %d, iter: %d' %(epoch, i))
+        # print('epoch: %d, iter: %d' %(epoch, i))
         iter_start_time = time.time()
         model.set_input(data)
         model.optimize_parameters()
 
         errors = model.get_current_errors()
         t = (time.time() - iter_start_time)
-        print_current_errors(epoch, i, errors, total_steps)
+        print_current_errors(epoch=epoch, i=i, errors=errors, t=t)
 
         tb_v.add_loss(errors=errors, scalar_x=total_steps)
 

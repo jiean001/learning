@@ -19,6 +19,7 @@ class BaseOptions():
 
     def initialize(self):
         self.parser.add_argument('--use_tensorboardX', action='store_true', help='use tensorboardX to visiable')
+        self.parser.add_argument('--ftX_comment', type=str, default='classifier_embedding_training', help='use tensorboardX to visiable')
         self.parser.add_argument('--gpu_ids', type=str, default='0', help='gpu ids: e.g. 0  0,1,2, 0,2')
 
         self.parser.add_argument('--checkpoints_dir', type=str, default='./checkpoints', help='models are saved here')
@@ -70,9 +71,14 @@ class BaseOptions():
             print('%s: %s' % (str(k), str(v)))
         print('-------------- End ----------------')
 
-        self.opt.log_dir = os.path.join(self.opt.checkpoints_dir, self.opt.name, self.opt.log_dir)
+        if self.opt.isTrain:
+            self.opt.log_dir = os.path.join(self.opt.checkpoints_dir, self.opt.name, self.opt.log_dir)
+            expr_dir = os.path.join(self.opt.checkpoints_dir, self.opt.name)
+        else:
+            self.opt.log_dir = os.path.join(self.opt.results_dir, self.opt.log_dir)
+            expr_dir = os.path.join(self.opt.results_dir, self.opt.name)
+
         # save to the disk
-        expr_dir = os.path.join(self.opt.checkpoints_dir, self.opt.name)
         mkdirs(expr_dir)
         mkdirs(self.opt.log_dir)
         file_name = os.path.join(expr_dir, 'opt.txt')

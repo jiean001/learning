@@ -8,8 +8,12 @@
 #########################################################
 
 def print_current_errors(epoch, i, errors, t):
-    message = '(epoch: %d, iters: %d, time: %.3f) ' % (epoch, i, t)
-    for k, v in errors.items():
-        message += '%s: %.3f ' % (k, v)
-
+    if epoch:  # train
+        message = '(epoch: %d, iters: %d, time: %.3f) ' % (epoch, i, t)
+        for k, v in errors.items():
+            message += '%s: %.3f ' % (k, v)
+    else:  # test
+        message = '(iters: %d, time: %.3f) ' % (i, t)
+        for k, v in errors.items():
+            message += '%s: %.3f ' % (k, v)
     print(message)

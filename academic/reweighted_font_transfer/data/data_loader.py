@@ -41,6 +41,11 @@ class Classifier_DataLoader(BaseDataLoader):
                 transforms.ToTensor(),
                 transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
             ]),
+            'test': transforms.Compose([
+                transforms.Resize(opt.loadSize, opt.loadSize),
+                transforms.ToTensor(),
+                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+            ]),
         }
 
         dataset = {x: dt.ImageFolder(os.path.join(opt.dataroot, x), transform[x]) for x in ['train', 'val', 'test']}

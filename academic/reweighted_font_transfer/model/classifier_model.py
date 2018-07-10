@@ -55,26 +55,15 @@ class Classifier_Model(BaseModel):
 
         self.optimizer.zero_grad()
         self.output = self.Classifier.forward(self._input)
-
         self.loss = self.criterion(self.output, self._label.long())
-
         self.loss.backward()
         self.optimizer.step()
 
-    def test(self, is_print):
+    def test(self):
         self._input = Variable(self.input, volatile=True)
         self._label = Variable(self.label, volatile=True)
-
         self.output = self.Classifier.forward(self._input)
-        self.test_loss = F.nll_loss(self.output, self._label, size_average=False).data[0]
-        pred = self.output.data.max(1, keepdim=True)[1]  # get the index of the max log-probability
-        self.correct = pred.eq(self._label.data.view_as(pred)).cpu().sum()  # 对预测正确的数据个数进行累加
-
-        if is_print:
-            num = len(self._label)
-            print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
-                self.test_loss / num , self.correct, len(num),
-                100. * self.correct / len(num)))
+        self.loss = F.nll_loss(self.output, self._label.long())
 
     def optimize_parameters(self):
         self.forward()

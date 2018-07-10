@@ -20,7 +20,7 @@ class TB_Visualizer:
             self.writer = SummaryWriter(log_dir=log_dir, comment=comment)
             self.use_gpu = use_gou
 
-    def colse(self):
+    def close(self):
         if self.use_tensorboardX:
             self.writer.close()
 
