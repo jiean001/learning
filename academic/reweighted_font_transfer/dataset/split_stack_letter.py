@@ -75,6 +75,7 @@ if __name__ == '__main__':
     source_dir = r'/home/xiongbo/datasets/MCGAN/'
     target_together_dir = r'/home/xiongbo/datasets/TOGETHER/'
     target_separate_dir = r'/home/xiongbo/datasets/SEPARATE/'
+
     mcgan = MCGAN_DATA(source_dir=source_dir, target_together_dir=target_together_dir, target_separate_dir=target_separate_dir)
 
     # mcgan = MCGAN_DATA()  # (source_dir=r'.', target_together_dir=r'./together', target_separate_dir=r'./separate')

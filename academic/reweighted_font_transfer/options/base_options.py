@@ -46,6 +46,9 @@ class BaseOptions():
         self.parser.add_argument('--which_model_net_Classifier', type=str, default='basic', help='selects model to use for Classifier')
         self.parser.add_argument('--use_dropout', action='store_true', help='use dropout for the generator')
         self.parser.add_argument('--classifier', action='store_true', help='use dropout for the generator')
+        self.parser.add_argument('--config_dir', type=str, default='../config/',
+                                 help='selects model to use for Classifier')
+        self.parser.add_argument('--reweighted', action='store_true', help='use dropout for the generator')
         self.parser.add_argument('--isTrain', action='store_true', help='use dropout for the generator')
         self.parser.add_argument('--nThreads', default=6, type=int, help='# threads for loading data')
         self.parser.add_argument('--embedding_freq', default=20, type=int, help='# threads for loading data')

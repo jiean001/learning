@@ -39,6 +39,7 @@ def get_norm_layer(norm_type):
     return norm_layer
 
 
+# 卷积层block
 def conv_norm_relu_module(norm_layer, input_nc, ngf, kernel_size, padding, stride=1, relu='relu'):
     model = [nn.Conv2d(input_nc, ngf, kernel_size=kernel_size, padding=padding,stride=stride)]
     if norm_layer:
@@ -51,6 +52,16 @@ def conv_norm_relu_module(norm_layer, input_nc, ngf, kernel_size, padding, strid
     return model
 
 
+# deconv block
+def convTranspose_norm_relu_module(norm_layer, input_nc, ngf, kernel_size, padding, stride=1, output_padding=0):
+    model = [nn.ConvTranspose2d(input_nc, ngf,
+                                kernel_size=kernel_size, stride=stride, padding=padding, output_padding=output_padding),
+             norm_layer(int(ngf)),
+             nn.ReLU(True)]
+    return model
+
+
+# 全连接层
 def fc_module(input_nc, output_nc):
     # model = [nn.Linear(input_nc, output_nc), nn.Softmax()]
     model = [nn.Linear(int(input_nc), int(output_nc))]
@@ -91,6 +102,7 @@ class ResnetBlock(nn.Module):
         return out
 
 
+#  分类网
 class Classifier_letter(nn.Module):
     def __init__(self, input_nc=3, output_nc=26, ngf=64, norm='batch', use_dropout=False, gpu_ids=[]):
         if gpu_ids:
@@ -170,3 +182,160 @@ class Classifier_letter(nn.Module):
             fc_input = layer_4_res_6.view(layer_4_res_6.size(0), -1)
             out = self.fc_layer(fc_input)
         return F.log_softmax(out)
+
+
+# 生成器
+class Generator_Reweighted(nn.Module):
+    def __init__(self, input_nc=3, output_nc=4, ngf=64, norm='batch', use_dropout=False,
+                 gpu_ids=[]):
+
+        use_gpu = len(gpu_ids) > 0
+        self.norm_layer = get_norm_layer(norm_type=norm)
+
+        if use_gpu:
+            assert (torch.cuda.is_available())
+
+        super(Generator_Reweighted, self).__init__()
+        self.input_nc = input_nc
+        self.output_nc = output_nc
+        self.ngf = ngf
+        self.gpu_ids = gpu_ids
+        self.use_dropout = use_dropout
+        self.norm = norm
+
+        self.Extract_Style_Feature()
+        self.Extract_Content_Feature()
+        self.Decode_Feature_Map()
+
+    # 3 --> 64 --> 64*3 --> 64*9
+    def Extract_Style_Feature(self):
+        factor_ch = 3
+        self.S_layer_1 = nn.Sequential(*conv_norm_relu_module(self.norm_layer, self.input_nc, self.ngf, 7, 3))
+        mult = factor_ch ** 0
+        self.S_layer_2 = nn.Sequential(
+            *conv_norm_relu_module(self.norm_layer, self.ngf * mult, self.ngf * mult * factor_ch, 3, 1, stride=2))
+        mult = factor_ch ** 1
+        self.S_layer_3 = nn.Sequential(
+            *conv_norm_relu_module(self.norm_layer, self.ngf * mult, self.ngf * mult * factor_ch, 3, 1, stride=2))
+        n_downsampling = 2
+        mult = factor_ch ** n_downsampling
+        self.S_layer_4_res_1 = nn.Sequential(
+            ResnetBlock(self.ngf * mult, 'zero', norm_layer=self.norm_layer, use_dropout=self.norm_layer))
+        self.S_layer_4_res_2 = nn.Sequential(
+            ResnetBlock(self.ngf * mult, 'zero', norm_layer=self.norm_layer, use_dropout=self.norm_layer))
+        self.S_layer_4_res_3 = nn.Sequential(
+            ResnetBlock(self.ngf * mult, 'zero', norm_layer=self.norm_layer, use_dropout=self.norm_layer))
+        self.S_layer_4_res_4 = nn.Sequential(
+            ResnetBlock(self.ngf * mult, 'zero', norm_layer=self.norm_layer, use_dropout=self.norm_layer))
+        self.S_layer_4_res_5 = nn.Sequential(
+            ResnetBlock(self.ngf * mult, 'zero', norm_layer=self.norm_layer, use_dropout=self.norm_layer))
+        self.S_layer_4_res_6 = nn.Sequential(
+            ResnetBlock(self.ngf * mult, 'zero', norm_layer=self.norm_layer, use_dropout=self.norm_layer))
+
+    def Extract_Content_Feature(self):
+        factor_ch = 3
+        self.C_layer_1 = nn.Sequential(*conv_norm_relu_module(self.norm_layer, self.input_nc, self.ngf, 7, 3))
+        mult = factor_ch ** 0
+        self.C_layer_2 = nn.Sequential(
+            *conv_norm_relu_module(self.norm_layer, self.ngf * mult, self.ngf * mult * factor_ch, 3, 1, stride=2))
+        mult = factor_ch ** 1
+        self.C_layer_3 = nn.Sequential(
+            *conv_norm_relu_module(self.norm_layer, self.ngf * mult, self.ngf * mult * factor_ch, 3, 1, stride=2))
+        n_downsampling = 2
+        mult = factor_ch ** n_downsampling
+        self.C_layer_4_res_1 = nn.Sequential(
+            ResnetBlock(self.ngf * mult, 'zero', norm_layer=self.norm_layer, use_dropout=self.norm_layer))
+        self.C_layer_4_res_2 = nn.Sequential(
+            ResnetBlock(self.ngf * mult, 'zero', norm_layer=self.norm_layer, use_dropout=self.norm_layer))
+        self.C_layer_4_res_3 = nn.Sequential(
+            ResnetBlock(self.ngf * mult, 'zero', norm_layer=self.norm_layer, use_dropout=self.norm_layer))
+        self.C_layer_4_res_4 = nn.Sequential(
+            ResnetBlock(self.ngf * mult, 'zero', norm_layer=self.norm_layer, use_dropout=self.norm_layer))
+        self.C_layer_4_res_5 = nn.Sequential(
+            ResnetBlock(self.ngf * mult, 'zero', norm_layer=self.norm_layer, use_dropout=self.norm_layer))
+        self.C_layer_4_res_6 = nn.Sequential(
+            ResnetBlock(self.ngf * mult, 'zero', norm_layer=self.norm_layer, use_dropout=self.norm_layer))
+
+    def Decode_Feature_Map(self):
+        n_downsampling = 2
+        factor_ch = 3
+        mult = factor_ch ** (n_downsampling - 0)
+        self.SC_layer_5 = nn.Sequential(
+            *convTranspose_norm_relu_module(self.norm_layer, self.ngf * mult * 2, int(self.ngf * mult / factor_ch), 3,
+                                            1,
+                                            stride=2, output_padding=1))
+        mult = factor_ch ** (n_downsampling - 1)
+        self.SC_layer_6 = nn.Sequential(
+            *convTranspose_norm_relu_module(self.norm_layer, self.ngf * mult * 2, int(self.ngf * mult / factor_ch), 3,
+                                            1,
+                                            stride=2, output_padding=1))
+        self.SC_layer_7 = nn.Sequential(nn.Conv2d(self.ngf*2, self.output_nc, kernel_size=7, padding=3), nn.Tanh())
+
+    def Mix_S_C_Feature(self, Style_Feature, Content_feature):
+        ret = torch.cat((Content_feature, Style_Feature), dim=1)
+        return ret
+
+    def forward_Style(self, input_style):
+        if self.gpu_ids and isinstance(input_style.data, torch.cuda.FloatTensor):
+            layer_1 = nn.parallel.data_parallel(self.S_layer_1, input_style, self.gpu_ids)  # 6
+            layer_2 = nn.parallel.data_parallel(self.S_layer_2, layer_1, self.gpu_ids)  # 5
+            layer_3 = nn.parallel.data_parallel(self.S_layer_3, layer_2, self.gpu_ids)
+            layer_4_res_1 = nn.parallel.data_parallel(self.S_layer_4_res_1, layer_3, self.gpu_ids)
+            layer_4_res_2 = nn.parallel.data_parallel(self.S_layer_4_res_2, layer_4_res_1, self.gpu_ids)
+            layer_4_res_3 = nn.parallel.data_parallel(self.S_layer_4_res_3, layer_4_res_2, self.gpu_ids)
+            layer_4_res_4 = nn.parallel.data_parallel(self.S_layer_4_res_4, layer_4_res_3, self.gpu_ids)
+            layer_4_res_5 = nn.parallel.data_parallel(self.S_layer_4_res_5, layer_4_res_4, self.gpu_ids)
+            layer_4_res_6 = nn.parallel.data_parallel(self.S_layer_4_res_6, layer_4_res_5, self.gpu_ids)
+        else:
+            layer_1 = self.S_layer_1(input_style)
+            layer_2 = self.S_layer_2layer_2(layer_1)
+            layer_3 = self.S_layer_3layer_3(layer_2)
+            layer_4_res_1 = self.S_layer_4_res_1(layer_3)
+            layer_4_res_2 = self.S_layer_4_res_2(layer_4_res_1)
+            layer_4_res_3 = self.S_layer_4_res_3(layer_4_res_2)
+            layer_4_res_4 = self.S_layer_4_res_4(layer_4_res_3)
+            layer_4_res_5 = self.S_layer_4_res_5(layer_4_res_4)
+            layer_4_res_6 = self.S_layer_4_res_6(layer_4_res_5)
+        return layer_4_res_6, layer_2, layer_1
+
+
+    def forward_Content(self, input_content):
+        if self.gpu_ids and isinstance(input_content.data, torch.cuda.FloatTensor):
+            layer_1 = nn.parallel.data_parallel(self.C_layer_1, input_content, self.gpu_ids)
+            layer_2 = nn.parallel.data_parallel(self.C_layer_2, layer_1, self.gpu_ids)
+            layer_3 = nn.parallel.data_parallel(self.C_layer_3, layer_2, self.gpu_ids)
+            layer_4_res_1 = nn.parallel.data_parallel(self.C_layer_4_res_1, layer_3, self.gpu_ids)
+            layer_4_res_2 = nn.parallel.data_parallel(self.C_layer_4_res_2, layer_4_res_1, self.gpu_ids)
+            layer_4_res_3 = nn.parallel.data_parallel(self.C_layer_4_res_3, layer_4_res_2, self.gpu_ids)
+            layer_4_res_4 = nn.parallel.data_parallel(self.C_layer_4_res_4, layer_4_res_3, self.gpu_ids)
+            layer_4_res_5 = nn.parallel.data_parallel(self.C_layer_4_res_5, layer_4_res_4, self.gpu_ids)
+            layer_4_res_6 = nn.parallel.data_parallel(self.C_layer_4_res_6, layer_4_res_5, self.gpu_ids)
+        else:
+            layer_1 = self.C_layer_1(input_content)
+            layer_2 = self.C_layer_2layer_2(layer_1)
+            layer_3 = self.C_layer_3layer_3(layer_2)
+            layer_4_res_1 = self.C_layer_4_res_1(layer_3)
+            layer_4_res_2 = self.C_layer_4_res_2(layer_4_res_1)
+            layer_4_res_3 = self.C_layer_4_res_3(layer_4_res_2)
+            layer_4_res_4 = self.C_layer_4_res_4(layer_4_res_3)
+            layer_4_res_5 = self.C_layer_4_res_5(layer_4_res_4)
+            layer_4_res_6 = self.C_layer_4_res_6(layer_4_res_5)
+        return layer_4_res_6, layer_2, layer_1
+
+    def forward(self, input_style, input_content):
+        out_style, _, _ = self.forward_Style(input_style=input_style)
+        out_content, content_2, content_1 = self.forward_Content(input_content=input_content)
+        mixed_feature = self.Mix_S_C_Feature(out_style, out_content)
+        if self.gpu_ids and isinstance(input_content.data, torch.cuda.FloatTensor) and isinstance(input_style.data, torch.cuda.FloatTensor):
+            layer_5 = nn.parallel.data_parallel(self.layer_5, mixed_feature, self.gpu_ids)
+            mixed_feature_2 = self.Mix_S_C_Feature(layer_5, content_2)
+            layer_6 = nn.parallel.data_parallel(self.layer_6, mixed_feature_2, self.gpu_ids)
+            mixed_feature_1 = self.Mix_S_C_Feature(layer_6, content_1)
+            layer_7 = nn.parallel.data_parallel(self.layer_7, mixed_feature_1, self.gpu_ids)
+        else:
+            layer_5 = self.layer_5(mixed_feature)
+            mixed_feature_2 = self.Mix_S_C_Feature(layer_5, content_2)
+            layer_6 = self.layer_6(mixed_feature_2)
+            mixed_feature_1 = self.Mix_S_C_Feature(layer_6, content_1)
+            layer_7 = self.layer_7(mixed_feature_1)
+        return layer_7
