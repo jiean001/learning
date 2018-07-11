@@ -22,11 +22,15 @@ import glob
 # 将dataset保存为list
 def make_dataset(config_file_dir, dataset_name):
     config_file_list = glob.glob(r'%s/%s*.json' %(config_file_dir, dataset_name))
-    images = []
+    is_first = True
     for config_file in config_file_list:
         f = open(config_file, 'r')
         _images = json.load(f)
-        images.append(_images)
+        if is_first:
+            is_first = False
+            images = _images
+        else:
+            images.append(_images)
         f.close()
     np.random.shuffle(images)
     return images
@@ -98,12 +102,10 @@ class ImageFolder(data.Dataset):
 
         self.transform = transform
         self.loader = loader
-
         self.fineSize = fineSize
 
     def __getitem__(self, index):
         style_content_gt = self.imgs[index]
-
         style_list = style_content_gt[0]
         content_list = style_content_gt[1]
         gt_img_ = style_content_gt[2]

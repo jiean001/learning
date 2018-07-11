@@ -1,12 +1,13 @@
 #!/bin/bash -f
 
 # 不同服务器这些设置可能不同
-DATA=Capital64
-DATASET="/home/xiongbo/datasets/TOGETHER/${DATA}/"
+DATA=Capitals_colorGrad64
+DATASET="/home/xiongbo/datasets/SEPARATE/${DATA}/"
 CHECKPOINTS=/home/xiongbo/results/luxb/reweighted_font_transfer
 CUDA_ID=0
 GPU_IDS=0
-BATCHSIZE=64
+BATCHSIZE=32
+NTHREAD=1
 
 experiment_dir="Classifier_pretrain"
 MODEL=classifier
@@ -39,13 +40,15 @@ fi
 
 exec &> >(tee -a "$LOG")
 
-CUDA_VISIBLE_DEVICES=${CUDA_ID} python ../controller/train_classifier.py --dataroot ${DATASET} --name "${experiment_dir}"\
+CUDA_VISIBLE_DEVICES=${CUDA_ID} python ../controller/train_rew_gan.py --dataroot ${DATASET} --name "${experiment_dir}"\
 						 --model $MODEL --which_model_net_Classifier Classifier_letter \
 						 --norm $NORM --input_nc $IN_NC --output_nc $O_NC --fineSize $FINESIZE --loadSize $LOADSIZE --use_dropout \
 						 --batchSize $BATCHSIZE  \
 						 --gpu_ids $GPU_IDS  --reweighted --checkpoints_dir $CHECKPOINTS \
 						 --use_tensorboardX --embedding_freq $EMBEDDING_FREQ \
-						 ----config_dir $CONFIG_DIR \
+						 --nThreads $NTHREAD \
+						 --isTrain \
+						 --config_dir $CONFIG_DIR \
                          --which_epoch $WHICH_EPOCH \
                          --beta1 $BETA1 --lr $LR \
 						 --save_epoch_freq $EPOCH_FREQ --niter $NITER --niter_decay $NITERD

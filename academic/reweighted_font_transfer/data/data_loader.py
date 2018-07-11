@@ -29,7 +29,7 @@ def CreateDataLoader(opt):
 
 class ReWeighted_DataLoader(BaseDataLoader):
     def initialize(self, opt):
-        BaseDataLoader.initialize(self.opt)
+        BaseDataLoader.initialize(self, opt)
         self.fineSize = opt.fineSize
 
         transform = transforms.Compose([
@@ -47,7 +47,7 @@ class ReWeighted_DataLoader(BaseDataLoader):
         _, dataset_name = os.path.split(opt.dataroot)
 
         dataset = ImageFolder(root=root, config_dir=config_dir, dataset_name=dataset_name,
-                              transform=transform, fineSize=opt.fineSize, loadSize=opt.loadSize)
+                              transform=transform, fineSize=opt.fineSize)
 
         data_loader = torch.utils.data.DataLoader(
             dataset,
@@ -56,7 +56,7 @@ class ReWeighted_DataLoader(BaseDataLoader):
             num_workers=int(self.opt.nThreads))
 
         self.dataset = dataset
-        self._data = ReWeighted_Data(data_loader, opt.max_dataset_size, opt.isTrain)
+        self._data = ReWeighted_Data(data_loader, opt.max_dataset_size)
 
     def name(self):
         return 'ReWeighted_DataLoader'
@@ -118,6 +118,13 @@ class ReWeighted_Data(object):
         self.data_loader_iter = iter(self.data_loader)
         self.iter = 0
         return self
+
+    def next(self):
+        self.iter += 1
+        if self.iter > self.max_dataset_size:
+            raise StopIteration
+        style_imgs, content_imgs, gt_img = next(self.data_loader_iter)
+        return {'style_imgs': style_imgs, 'content_imgs': content_imgs,'gt_img': gt_img}
 
     def __next__(self):
         self.iter += 1
