@@ -29,8 +29,8 @@ def make_dataset(config_file_dir, dataset_name):
         if is_first:
             is_first = False
             images = _images
-        else:
-            images.append(_images)
+        else: # 合并字符串要用+,不能用append
+            images += _images
         f.close()
     np.random.shuffle(images)
     return images

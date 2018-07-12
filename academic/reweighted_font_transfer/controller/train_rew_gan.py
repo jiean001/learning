@@ -23,10 +23,15 @@ data_loader = CreateDataLoader(opt)
 dataset = data_loader.load_data()
 
 for i, data in enumerate(dataset):
-    print(data.size())
-    break
+    input_style = data['style_imgs']
+    input_content = data['content_imgs']
+    input_gt = data['gt_img']
 
+    print(input_style.size())
+    print(input_content.size())
+    print(input_gt.size())
 
+'''
 model = create_model(opt)
 total_steps = 0
 tb_v = TB_Visualizer(log_dir=opt.log_dir, comment=opt.ftX_comment, use_tensorboardX=opt.use_tensorboardX)
@@ -83,3 +88,4 @@ for epoch in range(start_epoch, opt.niter + opt.niter_decay + 1):
     if epoch > opt.niter:
         model.update_learning_rate()
 tb_v.close()
+'''

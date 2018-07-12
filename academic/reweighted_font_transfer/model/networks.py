@@ -10,7 +10,7 @@ import functools
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
+from utils.img_util import *
 
 # 初始化权重
 def weights_init(m):
@@ -187,7 +187,7 @@ class Classifier_letter(nn.Module):
 # 生成器
 class Generator_Reweighted(nn.Module):
     def __init__(self, input_nc=3, output_nc=4, ngf=64, norm='batch', use_dropout=False,
-                 gpu_ids=[]):
+                 gpu_ids=[], constant_cos=2):
 
         use_gpu = len(gpu_ids) > 0
         self.norm_layer = get_norm_layer(norm_type=norm)
@@ -202,6 +202,7 @@ class Generator_Reweighted(nn.Module):
         self.gpu_ids = gpu_ids
         self.use_dropout = use_dropout
         self.norm = norm
+        self.constant_cos = constant_cos
 
         self.Extract_Style_Feature()
         self.Extract_Content_Feature()
@@ -275,6 +276,60 @@ class Generator_Reweighted(nn.Module):
         ret = torch.cat((Content_feature, Style_Feature), dim=1)
         return ret
 
+    def mixed_reweigted_feature_map(self, SC_style_feature_map, SC_content_feature_map, SC_style_feature_map_rgb,
+                                    batch_size, channel, H, W):
+        conv2d = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=H)
+        softmax = nn.Softmax(dim=1)
+        conv2d.bias.data.fill_(0)
+        mixed_fm = None
+
+        zeros = torch.zeros(1, H, W)
+
+        for b in range(batch_size):
+            # batch
+            sc_s_fm = SC_style_feature_map[b]
+            sc_c_fm = SC_content_feature_map[b]
+            sc_s1_fm_rgb = SC_style_feature_map_rgb[b]
+
+            mixed_fm_c = None
+            for c in range(channel):
+                # channel
+                input = sc_s_fm[c].unsqueeze(1)
+                sc_c_fm_c = sc_c_fm[c].unsqueeze(1)
+                sc_s1_fm_rgb_c = sc_s1_fm_rgb[c]
+
+                #  将权重设置为content
+                conv2d.weight.data = sc_c_fm_c
+                # 计算内积
+                output_c = conv2d(input)
+                output_c = output_c.squeeze(1).squeeze(1).transpose(0, 1)
+
+                # 计算style的模长
+                mode1 = torch.dist(input[0], zeros, 2).view(1, 1)
+                mode2 = torch.dist(input[1], zeros, 2).view(1, 1)
+                mode3 = torch.dist(input[2], zeros, 2).view(1, 1)
+                mode = torch.cat((mode1, mode2, mode3), 1)
+                # mode_content = torch.dist(sc_c_fm_c, zeros, 2).view(1, 1)
+                # output_c /= mode_content
+                # print(mode_content)
+                #  乘以constant_cos*content模长的cos距离
+                output_c = self.constant_cos * output_c / mode
+                output_c = softmax(output_c)
+
+                mixed_fm_c_tmp = sc_s1_fm_rgb_c[0] * output_c[0][0] + \
+                                 sc_s1_fm_rgb_c[1] * output_c[0][1] + sc_s1_fm_rgb_c[2] * output_c[0][2]
+                if c == 0:
+                    mixed_fm_c = mixed_fm_c_tmp.unsqueeze(0)
+                else:
+                    mixed_fm_c = torch.cat((mixed_fm_c, mixed_fm_c_tmp.unsqueeze(0)))
+            mixed_fm_c = mixed_fm_c.unsqueeze(0)
+            if b == 0:
+                mixed_fm = mixed_fm_c
+            else:
+                mixed_fm = torch.cat((mixed_fm, mixed_fm_c))
+        return mixed_fm
+
+    # input_style : [batch, channel, H, W]
     def forward_Style(self, input_style):
         if self.gpu_ids and isinstance(input_style.data, torch.cuda.FloatTensor):
             layer_1 = nn.parallel.data_parallel(self.S_layer_1, input_style, self.gpu_ids)  # 6
@@ -298,7 +353,7 @@ class Generator_Reweighted(nn.Module):
             layer_4_res_6 = self.S_layer_4_res_6(layer_4_res_5)
         return layer_4_res_6, layer_2, layer_1
 
-
+    # input_content : [batch, channel, H, W]
     def forward_Content(self, input_content):
         if self.gpu_ids and isinstance(input_content.data, torch.cuda.FloatTensor):
             layer_1 = nn.parallel.data_parallel(self.C_layer_1, input_content, self.gpu_ids)
@@ -322,20 +377,140 @@ class Generator_Reweighted(nn.Module):
             layer_4_res_6 = self.C_layer_4_res_6(layer_4_res_5)
         return layer_4_res_6, layer_2, layer_1
 
+    # input_content : [batch, channel, H, W]
+    # input_style : [batch, num, channel, H, W]
     def forward(self, input_style, input_content):
-        out_style, _, _ = self.forward_Style(input_style=input_style)
-        out_content, content_2, content_1 = self.forward_Content(input_content=input_content)
-        mixed_feature = self.Mix_S_C_Feature(out_style, out_content)
+        # style rgb
+        input_style = input_style.transpose(0, 1)
+        num, batch_size, channel, H, W = input_style.size()
+        # todo
+        assert num == 3, 'style number != 3'
+        SC_style1_feature_map_rgb, _, _ = self.forward_Style(input_style=input_style[0])
+        SC_style2_feature_map_rgb, _, _ = self.forward_Style(input_style=input_style[1])
+        SC_style3_feature_map_rgb, _, _ = self.forward_Style(input_style=input_style[2])
+        # style binary
+        input_style_b = get_binary_img(input_style)
+        SC_style1_feature_map_b, _, _ = self.forward_Style(input_style=input_style_b[0].detach())
+        SC_style2_feature_map_b, _, _ = self.forward_Style(input_style=input_style_b[1].detach())
+        SC_style3_feature_map_b, _, _ = self.forward_Style(input_style=input_style_b[2].detach())
+        # style_content binary
+        input_content = get_binary_img(input_content)
+        _SC_content_feature_map, _, _ = self.forward_Style(input_style=input_content.detach())
+        # content binary
+        C_content_feature_map, C_l2, C_l1 = self.forward_Content(input_style=input_content)
+
+        SC_style_feature_map = torch.cat((SC_style1_feature_map_b.unsqueeze(2),
+                                      SC_style2_feature_map_b.unsqueeze(2),
+                                      SC_style3_feature_map_b.unsqueeze(2)), 2)
+        SC_content_feature_map = _SC_content_feature_map.unsqueeze(2)
+        SC_style_feature_map_rgb = torch.cat((SC_style1_feature_map_rgb.unsqueeze(2),
+                                              SC_style2_feature_map_rgb.unsqueeze(2),
+                                              SC_style3_feature_map_rgb.unsqueeze(2)), 2)
+
+        reweigthed_fm = self.mixed_reweigted_feature_map(SC_style_feature_map=SC_style_feature_map,
+                                                         SC_content_feature_map=SC_content_feature_map,
+                                                         SC_style_feature_map_rgb=SC_style_feature_map_rgb,
+                                                         batch_size=batch_size, channel=channel, H=H, W=W)
+
+        mixed_feature = self.Mix_S_C_Feature(reweigthed_fm, C_content_feature_map)
+
         if self.gpu_ids and isinstance(input_content.data, torch.cuda.FloatTensor) and isinstance(input_style.data, torch.cuda.FloatTensor):
             layer_5 = nn.parallel.data_parallel(self.layer_5, mixed_feature, self.gpu_ids)
-            mixed_feature_2 = self.Mix_S_C_Feature(layer_5, content_2)
+            mixed_feature_2 = self.Mix_S_C_Feature(layer_5, C_l2)
             layer_6 = nn.parallel.data_parallel(self.layer_6, mixed_feature_2, self.gpu_ids)
-            mixed_feature_1 = self.Mix_S_C_Feature(layer_6, content_1)
+            mixed_feature_1 = self.Mix_S_C_Feature(layer_6, C_l1)
             layer_7 = nn.parallel.data_parallel(self.layer_7, mixed_feature_1, self.gpu_ids)
         else:
             layer_5 = self.layer_5(mixed_feature)
-            mixed_feature_2 = self.Mix_S_C_Feature(layer_5, content_2)
+            mixed_feature_2 = self.Mix_S_C_Feature(layer_5, C_l2)
             layer_6 = self.layer_6(mixed_feature_2)
-            mixed_feature_1 = self.Mix_S_C_Feature(layer_6, content_1)
+            mixed_feature_1 = self.Mix_S_C_Feature(layer_6, C_l1)
             layer_7 = self.layer_7(mixed_feature_1)
-        return layer_7
+        out = layer_7.transpose(0, 1)
+        generate_rgb = out[0:3].transpose(0, 1)
+        generate_b = out[3:].transpose(0, 1)
+        return generate_rgb, generate_b
+
+
+##Apply a transformation on the input and prediction before feeding into the discriminator
+## in the conditional case
+class InputTransformation(nn.Module):
+    def __init__(self, input_nc, nif=32, norm_layer=nn.BatchNorm2d, gpu_ids=[]):
+        super(InputTransformation, self).__init__()
+        self.gpu_ids = gpu_ids
+        use_gpu = len(gpu_ids) > 0
+        if use_gpu:
+            assert (torch.cuda.is_available())
+
+        sequence = [nn.Conv2d(input_nc, nif, kernel_size=3, stride=2, padding=1),
+                    norm_layer(nif),
+                    nn.ReLU(True)]
+        sequence += [nn.Conv2d(nif, nif, kernel_size=3, stride=2, padding=1),
+                     norm_layer(nif),
+                     nn.ReLU(True)]
+        self.model = nn.Sequential(*sequence)
+    def forward(self, input):
+        if len(self.gpu_ids) and isinstance(input.data, torch.cuda.FloatTensor):
+            return nn.parallel.data_parallel(self.model, input, self.gpu_ids)
+        else:
+            return self.model(input)
+
+
+# D pre
+def define_preNet(input_nc, nif=32, which_model_preNet='2_layers', norm='batch', gpu_ids=[]):
+    preNet = None
+    norm_layer = get_norm_layer(norm_type=norm)
+    use_gpu = len(gpu_ids) > 0
+    if which_model_preNet == '2_layers':
+        print("2 layers convolution applied before being fed into the discriminator")
+        preNet = InputTransformation(input_nc, nif, norm_layer, gpu_ids)
+        if use_gpu:
+            assert(torch.cuda.is_available())
+            preNet.cuda(device=gpu_ids[0])
+        preNet.apply(weights_init)
+    return preNet
+
+
+# D, patchGan
+class NLayerDiscriminator(nn.Module):
+    def __init__(self, input_nc=15, ndf=64, n_layers=3, is_RGB=True, norm_layer=nn.BatchNorm2d, use_sigmoid=False, norm_type='batch',
+                 postConv=True, gpu_ids=[]):
+        super(NLayerDiscriminator, self).__init__()
+        self.gpu_ids = gpu_ids
+        self.is_RGB = is_RGB
+
+        kw = 5
+        padw = int(np.ceil((kw - 1) / 2))
+        sequence = [
+            nn.Conv2d(input_nc, ndf, kernel_size=kw, stride=2, padding=padw),
+            nn.LeakyReLU(0.2, True)
+        ]
+
+        nf_mult = 1
+        nf_mult_prev = 1
+        for n in range(1, n_layers):
+            nf_mult_prev = nf_mult
+            nf_mult = min(2 ** n, 8)
+            sequence += conv_norm_relu_module(norm_type, norm_layer, ndf * nf_mult_prev,
+                                              ndf * nf_mult, kw, padw, stride=2, relu='Lrelu')
+
+        nf_mult_prev = nf_mult
+        nf_mult = min(2 ** n_layers, 8)
+
+        sequence += conv_norm_relu_module(norm_type, norm_layer, ndf * nf_mult_prev,
+                                          ndf * nf_mult, kw, padw, stride=1, relu='Lrelu')
+
+        if postConv:
+            sequence += [nn.Conv2d(ndf * nf_mult, 1, kernel_size=kw, stride=1, padding=padw)]
+
+            if use_sigmoid:
+                sequence += [nn.Sigmoid()]
+
+        self.model = nn.Sequential(*sequence)
+
+    # input:[batch, count, channel, hight, width]
+    def forward(self, input):
+        if len(self.gpu_ids) and isinstance(input.data, torch.cuda.FloatTensor):
+            return nn.parallel.data_parallel(self.model, input, self.gpu_ids)
+        else:
+            return self.model(input)

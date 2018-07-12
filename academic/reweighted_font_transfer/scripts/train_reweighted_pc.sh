@@ -6,7 +6,7 @@ DATASET="/home/xiongbo/datasets/SEPARATE/${DATA}/"
 CHECKPOINTS=/home/xiongbo/results/luxb/reweighted_font_transfer
 CUDA_ID=0
 GPU_IDS=0
-BATCHSIZE=32
+BATCHSIZE=1024
 NTHREAD=1
 
 experiment_dir="Classifier_pretrain"
