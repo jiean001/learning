@@ -43,7 +43,7 @@ class BaseOptions():
         self.parser.add_argument('--norm', type=str, default='instance',
                                  help='instance normalization or batch normalization')
         self.parser.add_argument('--ngf', type=int, default=64, help='# of gen filters in first conv layer')
-        self.parser.add_argument('--which_model_net_Classifier', type=str, default='basic', help='selects model to use for Classifier')
+        self.parser.add_argument('--which_model_net_Classifier', type=str, default='Classifier_letter', help='selects model to use for Classifier')
         self.parser.add_argument('--use_dropout', action='store_true', help='use dropout for the generator')
         self.parser.add_argument('--classifier', action='store_true', help='use dropout for the generator')
         self.parser.add_argument('--config_dir', type=str, default='../config/',

@@ -46,4 +46,9 @@ class TB_Visualizer:
             print('add graph')
             self.writer.add_graph(model, (dummy_input,))
 
+    def add_img(self, tag='generate', img=None, iter=0):
+        if self.use_tensorboardX:
+            print(iter)
+            self.writer.add_image(tag, img, iter)
+
 

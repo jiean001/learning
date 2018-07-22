@@ -2,17 +2,17 @@
 
 # 不同服务器这些设置可能不同
 DATA=Capitals_colorGrad64
-DATASET="/home/xiongbo/datasets/SEPARATE/${DATA}/"
-CHECKPOINTS=/home/xiongbo/results/luxb/reweighted_font_transfer
-CUDA_ID=0
-GPU_IDS=0
-BATCHSIZE=4
+DATASET="/home/share/dataset/MCGAN/SEPARATE/${DATA}/"
+CHECKPOINTS=/home/luxb/results/luxb/reweighted_font_transfer
+CUDA_ID=1,0
+GPU_IDS=0,1
+BATCHSIZE=32
 NTHREAD=1
 
-experiment_dir="reweighted_gan_train"
-MODEL=reweighted_gan
+experiment_dir="reweighted_l_train"
+MODEL=reweighted_l
 MODEL_NETG=reweighted_gan
-COMMENT=reweighted_gan
+COMMENT=reweighted_l
 NORM=batch
 IN_NC=3
 O_NC=4

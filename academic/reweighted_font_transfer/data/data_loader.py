@@ -124,11 +124,11 @@ class ReWeighted_Data(object):
         if self.iter > self.max_dataset_size:
             raise StopIteration
         style_imgs, content_imgs, gt_img = next(self.data_loader_iter)
-        return {'style_imgs': style_imgs, 'content_imgs': content_imgs,'gt_img': gt_img}
+        return {'style_imgs': style_imgs, 'content_imgs': content_imgs, 'gt_img': gt_img}
 
     def __next__(self):
         self.iter += 1
         if self.iter > self.max_dataset_size:
             raise StopIteration
         style_imgs, content_imgs, gt_img = next(self.data_loader_iter)
-        return {'style_imgs': style_imgs, 'content_imgs': content_imgs,'gt_img': gt_img}
+        return {'style_imgs': style_imgs, 'content_imgs': content_imgs, 'gt_img': gt_img}

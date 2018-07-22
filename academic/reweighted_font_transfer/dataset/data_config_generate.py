@@ -139,4 +139,8 @@ class Data_Config_Generate:
 
 if __name__ == '__main__':
     # pc
-    tmp = Data_Config_Generate()
+    # tmp = Data_Config_Generate()
+    # 93
+    dataset_dir = r'/home/share/dataset/MCGAN/SEPARATE/Capitals_colorGrad64/train/'
+    tmp_93 = Data_Config_Generate(dataset_dir=dataset_dir)
+

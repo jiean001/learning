@@ -8,6 +8,7 @@
 #########################################################
 import functools
 import torch
+import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
 from utils.img_util import *
@@ -278,12 +279,12 @@ class Generator_Reweighted(nn.Module):
 
     def mixed_reweigted_feature_map(self, SC_style_feature_map, SC_content_feature_map, SC_style_feature_map_rgb,
                                     batch_size, channel, H, W):
-        conv2d = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=H)
-        softmax = nn.Softmax(dim=1)
-        conv2d.bias.data.fill_(0)
+        conv2d = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=H).cuda()
+        softmax = nn.Softmax(dim=1).cuda()
+        conv2d.bias.data.fill_(0.0)
         mixed_fm = None
 
-        zeros = torch.zeros(1, H, W)
+        zeros = torch.zeros(1, H, W).cuda()
 
         for b in range(batch_size):
             # batch
@@ -377,17 +378,29 @@ class Generator_Reweighted(nn.Module):
             layer_4_res_6 = self.C_layer_4_res_6(layer_4_res_5)
         return layer_4_res_6, layer_2, layer_1
 
+    '''
+    #  打印模型
+    def forward(self, input):
+        input_style = input['style_imgs']
+        input_content = input['content_imgs']
+        from torch.autograd import Variable
+
+        return self._forward(Variable(input_style), Variable(input_content))
+    '''
+
+
     # input_content : [batch, channel, H, W]
     # input_style : [batch, num, channel, H, W]
     def forward(self, input_style, input_content):
         # style rgb
         input_style = input_style.transpose(0, 1)
-        num, batch_size, channel, H, W = input_style.size()
+        num, _, _, _, _ = input_style.size()
         # todo
         assert num == 3, 'style number != 3'
         SC_style1_feature_map_rgb, _, _ = self.forward_Style(input_style=input_style[0])
         SC_style2_feature_map_rgb, _, _ = self.forward_Style(input_style=input_style[1])
         SC_style3_feature_map_rgb, _, _ = self.forward_Style(input_style=input_style[2])
+        batch_size, channel, H, W = SC_style1_feature_map_rgb.size()
         # style binary
         input_style_b = get_binary_img(input_style)
         SC_style1_feature_map_b, _, _ = self.forward_Style(input_style=input_style_b[0].detach())
@@ -397,7 +410,7 @@ class Generator_Reweighted(nn.Module):
         input_content = get_binary_img(input_content)
         _SC_content_feature_map, _, _ = self.forward_Style(input_style=input_content.detach())
         # content binary
-        C_content_feature_map, C_l2, C_l1 = self.forward_Content(input_style=input_content)
+        C_content_feature_map, C_l2, C_l1 = self.forward_Content(input_content=input_content)
 
         SC_style_feature_map = torch.cat((SC_style1_feature_map_b.unsqueeze(2),
                                       SC_style2_feature_map_b.unsqueeze(2),
@@ -413,13 +426,12 @@ class Generator_Reweighted(nn.Module):
                                                          batch_size=batch_size, channel=channel, H=H, W=W)
 
         mixed_feature = self.Mix_S_C_Feature(reweigthed_fm, C_content_feature_map)
-
         if self.gpu_ids and isinstance(input_content.data, torch.cuda.FloatTensor) and isinstance(input_style.data, torch.cuda.FloatTensor):
-            layer_5 = nn.parallel.data_parallel(self.layer_5, mixed_feature, self.gpu_ids)
+            layer_5 = nn.parallel.data_parallel(self.SC_layer_5, mixed_feature, self.gpu_ids)
             mixed_feature_2 = self.Mix_S_C_Feature(layer_5, C_l2)
-            layer_6 = nn.parallel.data_parallel(self.layer_6, mixed_feature_2, self.gpu_ids)
+            layer_6 = nn.parallel.data_parallel(self.SC_layer_6, mixed_feature_2, self.gpu_ids)
             mixed_feature_1 = self.Mix_S_C_Feature(layer_6, C_l1)
-            layer_7 = nn.parallel.data_parallel(self.layer_7, mixed_feature_1, self.gpu_ids)
+            layer_7 = nn.parallel.data_parallel(self.SC_layer_7, mixed_feature_1, self.gpu_ids)
         else:
             layer_5 = self.layer_5(mixed_feature)
             mixed_feature_2 = self.Mix_S_C_Feature(layer_5, C_l2)
@@ -491,13 +503,13 @@ class NLayerDiscriminator(nn.Module):
         for n in range(1, n_layers):
             nf_mult_prev = nf_mult
             nf_mult = min(2 ** n, 8)
-            sequence += conv_norm_relu_module(norm_type, norm_layer, ndf * nf_mult_prev,
+            sequence += conv_norm_relu_module(norm_layer, ndf * nf_mult_prev,
                                               ndf * nf_mult, kw, padw, stride=2, relu='Lrelu')
 
         nf_mult_prev = nf_mult
         nf_mult = min(2 ** n_layers, 8)
 
-        sequence += conv_norm_relu_module(norm_type, norm_layer, ndf * nf_mult_prev,
+        sequence += conv_norm_relu_module(norm_layer, ndf * nf_mult_prev,
                                           ndf * nf_mult, kw, padw, stride=1, relu='Lrelu')
 
         if postConv:
