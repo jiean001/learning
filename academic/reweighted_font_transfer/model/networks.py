@@ -279,6 +279,11 @@ class Generator_Reweighted(nn.Module):
 
     def mixed_reweigted_feature_map(self, SC_style_feature_map, SC_content_feature_map, SC_style_feature_map_rgb,
                                     batch_size, channel, H, W):
+        # print('SC_style_feature_map', SC_style_feature_map.size())  # (4, 576, 3, 16, 16)
+        # print('SC_content_feature_map', SC_content_feature_map.size())  # (4, 576, 1, 16, 16)
+        #　print('SC_style_feature_map_rgb', SC_style_feature_map_rgb.size())  # (4, 576, 3, 16, 16)
+        # print(batch_size, channel, H, W)  # (4, 576, 16, 16)
+
         conv2d = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=H).cuda()
         softmax = nn.Softmax(dim=1).cuda()
         conv2d.bias.data.fill_(0.0)
@@ -395,30 +400,28 @@ class Generator_Reweighted(nn.Module):
         # style rgb
         input_style = input_style.transpose(0, 1)
         num, _, _, _, _ = input_style.size()
-        # todo
-        assert num == 3, 'style number != 3'
-        SC_style1_feature_map_rgb, _, _ = self.forward_Style(input_style=input_style[0])
-        SC_style2_feature_map_rgb, _, _ = self.forward_Style(input_style=input_style[1])
-        SC_style3_feature_map_rgb, _, _ = self.forward_Style(input_style=input_style[2])
-        batch_size, channel, H, W = SC_style1_feature_map_rgb.size()
+
         # style binary
         input_style_b = get_binary_img(input_style)
-        SC_style1_feature_map_b, _, _ = self.forward_Style(input_style=input_style_b[0].detach())
-        SC_style2_feature_map_b, _, _ = self.forward_Style(input_style=input_style_b[1].detach())
-        SC_style3_feature_map_b, _, _ = self.forward_Style(input_style=input_style_b[2].detach())
+
+        # todo
+        assert num == 3, 'style number != 3'
+        SC_style_feature_map_rgb = self.forward_Style(input_style=input_style[0])[0].unsqueeze(2)
+        batch_size, channel, _, H, W = SC_style_feature_map_rgb.size()
+        SC_style_feature_map = self.forward_Style(input_style=input_style_b[0].detach())[0].unsqueeze(2)
+
+        for i in range(1, num):
+            SC_style_feature_map_rgb = torch.cat((SC_style_feature_map_rgb,
+                                                  self.forward_Style(input_style=input_style[i])[0].unsqueeze(2)), 2)
+            SC_style_feature_map = torch.cat((SC_style_feature_map,
+                                              self.forward_Style(input_style=input_style_b[i].detach())[0].unsqueeze(2)), 2)
         # style_content binary
         input_content = get_binary_img(input_content)
         _SC_content_feature_map, _, _ = self.forward_Style(input_style=input_content.detach())
         # content binary
         C_content_feature_map, C_l2, C_l1 = self.forward_Content(input_content=input_content)
 
-        SC_style_feature_map = torch.cat((SC_style1_feature_map_b.unsqueeze(2),
-                                      SC_style2_feature_map_b.unsqueeze(2),
-                                      SC_style3_feature_map_b.unsqueeze(2)), 2)
         SC_content_feature_map = _SC_content_feature_map.unsqueeze(2)
-        SC_style_feature_map_rgb = torch.cat((SC_style1_feature_map_rgb.unsqueeze(2),
-                                              SC_style2_feature_map_rgb.unsqueeze(2),
-                                              SC_style3_feature_map_rgb.unsqueeze(2)), 2)
 
         reweigthed_fm = self.mixed_reweigted_feature_map(SC_style_feature_map=SC_style_feature_map,
                                                          SC_content_feature_map=SC_content_feature_map,
@@ -444,7 +447,7 @@ class Generator_Reweighted(nn.Module):
         return generate_rgb, generate_b
 
 
-##Apply a transformation on the input and prediction before feeding into the discriminator
+## Apply a transformation on the input and prediction before feeding into the discriminator
 ## in the conditional case
 class InputTransformation(nn.Module):
     def __init__(self, input_nc, nif=32, norm_layer=nn.BatchNorm2d, gpu_ids=[]):

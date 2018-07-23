@@ -74,8 +74,9 @@ class Reweighted_L(BaseModel):
         self.loss_G_L1 = self.criterionL1(self.generate_letter, self._input_gt)
         self.loss_G_MSE = self.MSELoss(self.generate_letter, self._input_gt)
         self.loss_G_B_L1 = self.criterionL1(self.generate_letter, get_binary_img(self._input_gt))
+        self.loss_G_B_MSE = self.MSELoss(self.generate_letter, get_binary_img(self._input_gt))
 
-        self.loss_G = self.loss_G_B_L1 + 1.0 * (self.loss_G_L1 + self.loss_G_MSE)
+        self.loss_G = 1.0 * (self.loss_G_B_L1 + self.loss_G_B_MSE) + 1.0 * (self.loss_G_L1 + self.loss_G_MSE)
         self.loss_G.backward()
 
     def optimize_parameters(self):
@@ -88,6 +89,7 @@ class Reweighted_L(BaseModel):
     def get_current_errors(self):
         return OrderedDict([('loss_G_L1', self.loss_G_L1.data.item()),
                             ('loss_G_MSE', self.loss_G_MSE.data.item()),
+                            ('loss_G_B_MSE', self.loss_G_B_MSE.data.item()),
                             ('loss_G_B_L1', self.loss_G_B_L1.data.item())
         ])
 

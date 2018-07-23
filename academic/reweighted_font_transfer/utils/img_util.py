@@ -11,6 +11,7 @@
 from PIL import Image
 import torchvision.utils as vutils
 import torch
+import torchvision.transforms as transforms
 
 # 图片的默认打开方式
 def default_img_loader(path, width=64, height=64):
@@ -87,3 +88,14 @@ def print_imgs(data_dict, out_name, generate_imgs=None, generate_imgs_b=None):
             vutils.save_image(imgs, out_name, nrow=9)
     else:
         vutils.save_image(imgs, out_name, nrow=8)
+
+
+def print_img(img, out_name):
+    vutils.save_image(img, out_name)
+
+
+rew_transform = transforms.Compose([
+            transforms.Resize(64, 64),
+            transforms.ToTensor(),
+            transforms.Normalize((0.5, 0.5, 0.5),
+                                 (0.5, 0.5, 0.5))])

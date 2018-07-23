@@ -9,42 +9,48 @@
 
 import torch
 import torch.nn as nn
+from utils.img_util import *
 import time
 import torch.tensor as Variable
 
-batch_size = 256
-channel = 576
-H = 8
-W = 8
-
-#  二值化的feature map
-SC_style1_feature_map_b = torch.randn(batch_size, channel, H, W)
-SC_style2_feature_map_b = torch.randn(batch_size, channel, H, W)
-SC_style3_feature_map_b = torch.ones(batch_size, channel, H, W)
-_SC_content_feature_map = torch.randn(batch_size, channel, H, W)
-
-# RGB的feature map
-SC_style1_feature_map_rgb = torch.randn(batch_size, channel, H, W)
-SC_style2_feature_map_rgb = torch.randn(batch_size, channel, H, W)
-SC_style3_feature_map_rgb = torch.ones(batch_size, channel, H, W)
 constant_cos = 2
+batch_size = 1
+channel = 3
+H = 64
+W = 64
 
-def mixed_reweigted_feature_map():
-    conv2d = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=H)
-    softmax = nn.Softmax(dim=1)
-    conv2d.bias.data.fill_(0)
+img_A_RGB = rew_transform(default_img_loader(path=r'./000000/A.png'))
+img_B_RGB = rew_transform(default_img_loader(path=r'./000000/B.png'))
+img_F_RGB = rew_transform(default_img_loader(path=r'./000000/C.png'))
+img_E_RGB = rew_transform(default_img_loader(path=r'./000001/E.png'))  # [0].unsqueeze(0)
+
+img_A_B = get_binary_img(img_A_RGB)
+img_B_B = get_binary_img(img_B_RGB)
+img_F_B = get_binary_img(img_F_RGB)
+img_E_B = get_binary_img(img_E_RGB)
+
+print(type(img_E_RGB), img_E_RGB.size())  # (3, 64, 64)
+SC_style_feature_map = torch.cat((img_A_B.unsqueeze(1), img_B_B.unsqueeze(1),
+                                  img_F_B.unsqueeze(1)), 1).unsqueeze(0).cuda()
+SC_style_feature_map_rgb = torch.cat((img_A_RGB.unsqueeze(1), img_B_RGB.unsqueeze(1),
+                                      img_F_RGB.unsqueeze(1)), 1).unsqueeze(0).cuda()
+SC_content_feature_map = img_E_B.unsqueeze(1).unsqueeze(0).cuda()
+
+print(SC_style_feature_map.size(), SC_content_feature_map.size())
+
+def mixed_reweigted_feature_map(SC_style_feature_map, SC_content_feature_map, SC_style_feature_map_rgb,
+                                batch_size, channel, H, W):
+    # print('SC_style_feature_map', SC_style_feature_map.size())  # (4, 576, 3, 16, 16)
+    # print('SC_content_feature_map', SC_content_feature_map.size())  # (4, 576, 1, 16, 16)
+    # print('SC_style_feature_map_rgb', SC_style_feature_map_rgb.size())  # (4, 576, 3, 16, 16)
+    # print(batch_size, channel, H, W)  # (4, 576, 16, 16)
+
+    conv2d = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=H).cuda()
+    softmax = nn.Softmax(dim=1).cuda()
+    conv2d.bias.data.fill_(0.0)
     mixed_fm = None
 
-    start_time = time.time()
-    SC_style_feature_map = torch.cat((SC_style1_feature_map_b.unsqueeze(2),
-                                      SC_style2_feature_map_b.unsqueeze(2),
-                                      SC_style3_feature_map_b.unsqueeze(2)), 2)
-    SC_content_feature_map = _SC_content_feature_map.unsqueeze(2)
-    SC_style_feature_map_rgb = torch.cat((SC_style1_feature_map_rgb.unsqueeze(2),
-                                          SC_style2_feature_map_rgb.unsqueeze(2),
-                                          SC_style3_feature_map_rgb.unsqueeze(2)), 2)
-
-    zeros = torch.zeros(1, H, W)
+    zeros = torch.zeros(1, H, W).cuda()
 
     for b in range(batch_size):
         # batch
@@ -58,7 +64,6 @@ def mixed_reweigted_feature_map():
             input = sc_s_fm[c].unsqueeze(1)
             sc_c_fm_c = sc_c_fm[c].unsqueeze(1)
             sc_s1_fm_rgb_c = sc_s1_fm_rgb[c]
-            # print(sc_s1_fm_rgb_c.size())
 
             #  将权重设置为content
             conv2d.weight.data = sc_c_fm_c
@@ -77,6 +82,7 @@ def mixed_reweigted_feature_map():
             #  乘以constant_cos*content模长的cos距离
             output_c = constant_cos * output_c / mode
             output_c = softmax(output_c)
+            print(output_c)
 
             mixed_fm_c_tmp = sc_s1_fm_rgb_c[0] * output_c[0][0] + \
                              sc_s1_fm_rgb_c[1] * output_c[0][1] + sc_s1_fm_rgb_c[2] * output_c[0][2]
@@ -89,40 +95,10 @@ def mixed_reweigted_feature_map():
             mixed_fm = mixed_fm_c
         else:
             mixed_fm = torch.cat((mixed_fm, mixed_fm_c))
-    print(mixed_fm.size(), str(time.time() - start_time))
+    return mixed_fm
 
-mixed_reweigted_feature_map()
+new_img = mixed_reweigted_feature_map(SC_style_feature_map, SC_content_feature_map, SC_style_feature_map_rgb,
+                                batch_size, channel, H, W)
 
-
-'''
-start_time = time.time()
-for b in range(batch_size):
-    # batch
-    sc_s1_fm = SC_style1_feature_map[b].unsqueeze(1)
-    sc_s2_fm = SC_style2_feature_map[b].unsqueeze(1)
-    sc_s3_fm = SC_style3_feature_map[b].unsqueeze(1)
-    sc_c_fm = SC_content_feature_map[b].unsqueeze(1)
-    weight_c = None
-    for c in range(channel):
-        # channel
-        sc_s1_fm_c = sc_s1_fm[c].unsqueeze(1)
-        sc_s2_fm_c = sc_s2_fm[c].unsqueeze(1)
-        sc_s3_fm_c = sc_s3_fm[c].unsqueeze(1)
-        input = torch.cat((sc_s1_fm_c, sc_s2_fm_c, sc_s3_fm_c))
-        sc_c_fm_c = sc_c_fm[c].unsqueeze(1)
-        #  将权重设置为content
-        conv2d.weight.data = sc_c_fm_c
-        output_c = conv2d(input)
-        output_c = output_c.squeeze(1).squeeze(1).transpose(0, 1)
-        if c == 0:
-            weight_c = output_c
-        else:
-            weight_c = torch.cat((weight_c, output_c))
-    weight_c = weight_c.unsqueeze(0)
-    if b == 0:
-        weights = weight_c
-    else:
-        weights = torch.cat((weights, weight_c))
-print(weights.size(), str(time.time() - start_time))
-'''
-
+print_img(new_img, r'./E_new.png')
+print(new_img.size())
