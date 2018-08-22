@@ -24,19 +24,33 @@ data_loader = CreateDataLoader(opt)
 dataset = data_loader.load_data()
 dataset_size = len(data_loader)
 print('#training images = %d' % dataset_size)
+delta = dataset_size / opt.batchSize
+
+
+# 处理ctrl+c
+import signal
+def sigint_handel(signum, frame):
+    global is_sigint_up
+    is_sigint_up = True
+    print('catched interrupt signal')
+signal.signal(signal.SIGINT, sigint_handel)
+signal.signal(signal.SIGHUP, sigint_handel)
+signal.signal(signal.SIGTERM, sigint_handel)
+is_sigint_up = False
+
 
 model = create_model(opt)
 tb_v = TB_Visualizer(log_dir=opt.log_dir, comment=opt.ftX_comment, use_tensorboardX=opt.use_tensorboardX)
 start_epoch = 1
 # 继续训练
-if opt.continue_train:
+if int(opt.which_epoch) > 0:
     start_epoch += int(opt.which_epoch)
 total_steps = (start_epoch - 1)*opt.batchSize
 
 for epoch in range(start_epoch, opt.niter + opt.niter_decay + 1):
     epoch_start_time = time.time()
     for i, data in enumerate(dataset):
-        iter = epoch*opt.batchSize + i
+        iter = epoch*delta + i
         # 因为在多gpu的情况下，保存model会特别慢，所以multi-gpu下不保存模型
         if total_steps == -1:
             if len(opt.gpu_ids) == 1:
@@ -54,11 +68,11 @@ for epoch in range(start_epoch, opt.niter + opt.niter_decay + 1):
 
         tb_v.add_loss(errors=errors, scalar_x=iter)
         if total_steps % 20 == 0:
-            imgs = get_one_pair_imgs(data, model.get_crt_generate_img().data, model.get_crt_generate_img_b().data)
+            imgs = get_one_pair_imgs(data, model.get_crt_generate_img().data, model.get_crt_generate_img_b().data)[0]
             tb_v.add_img(img=imgs, iter=iter)
-        if total_steps % 30 == 0:
+        if iter % 50 == 0:
             print_imgs(data, '%s/%04d_%04d.png' % (model.get_save_imgs_dir(), epoch, i),
-                              model.get_crt_generate_img().data, model.get_crt_generate_img_b().data)
+                              model.get_crt_generate_img().data, model.get_crt_generate_img_b().data, batch_size=None)
 
         # 保存的数据,所以每个epoch只保存一个
         # if opt.use_tensorboardX and i % opt.embedding_freq == 0:
@@ -71,6 +85,11 @@ for epoch in range(start_epoch, opt.niter + opt.niter_decay + 1):
                   (epoch, total_steps))
             model.save('latest')
         total_steps += 1
+
+        if is_sigint_up:
+            print('exit')
+            model.save('interrupt_latest_%d_%d' %(epoch, i))
+            exit()
 
     if epoch % opt.save_epoch_freq == 0:
         print('saving the model at the end of epoch %d, iters %d' %

@@ -78,7 +78,7 @@ class BaseOptions():
             self.opt.log_dir = os.path.join(self.opt.checkpoints_dir, self.opt.name, self.opt.log_dir)
             expr_dir = os.path.join(self.opt.checkpoints_dir, self.opt.name)
         else:
-            self.opt.log_dir = os.path.join(self.opt.results_dir, self.opt.log_dir)
+            self.opt.log_dir = os.path.join(self.opt.results_dir, self.opt.name, self.opt.log_dir)
             expr_dir = os.path.join(self.opt.results_dir, self.opt.name)
 
         # save to the disk

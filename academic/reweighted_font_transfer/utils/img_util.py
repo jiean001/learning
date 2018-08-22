@@ -44,7 +44,7 @@ def get_one_pair_imgs(data_dict, generate_imgs=None, generate_imgs_b=None):
 
     generate_imgs_b = torch.cat((generate_imgs_b, generate_imgs_b, generate_imgs_b), 1)
 
-    content_imgs = content_imgs.view(content_imgs.size(0), style_imgs.size(1), 1, content_imgs.size(2),
+    content_imgs = content_imgs.view(content_imgs.size(0), content_imgs.size(1), 1, content_imgs.size(2),
                                      content_imgs.size(3))
 
     is_First = True
@@ -74,20 +74,20 @@ def get_one_pair_imgs(data_dict, generate_imgs=None, generate_imgs_b=None):
             crt_content_c1 = content_imgs[style_index][number_index]
             crt_content = torch.cat((crt_content_c1, crt_content_c1, crt_content_c1))
             imgs = torch.cat((imgs, crt_content.unsqueeze(0)))
-    return imgs
+    return imgs, content_imgs.size(0)
 
 
 #  打印图片
-def print_imgs(data_dict, out_name, generate_imgs=None, generate_imgs_b=None):
+def print_imgs(data_dict, out_name, generate_imgs=None, generate_imgs_b=None, batch_size=None):
     # size: (batch, channel*number, height, width)
-    imgs = get_one_pair_imgs(data_dict, generate_imgs, generate_imgs_b)
-    if generate_imgs is not None:
-        if generate_imgs_b is not None:
-            vutils.save_image(imgs, out_name, nrow=10)
-        else:
-            vutils.save_image(imgs, out_name, nrow=9)
+    imgs, _batch_size = get_one_pair_imgs(data_dict, generate_imgs, generate_imgs_b)
+    if batch_size:
+        pass
     else:
-        vutils.save_image(imgs, out_name, nrow=8)
+        batch_size = _batch_size
+    img_num = imgs.size(0)
+    row_num = img_num / batch_size
+    vutils.save_image(imgs, out_name, nrow=row_num)
 
 
 def print_img(img, out_name):

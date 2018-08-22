@@ -42,17 +42,21 @@ class ReWeighted_DataLoader(BaseDataLoader):
             root = os.path.join(opt.dataroot, 'train')
             config_dir = os.path.join(opt.config_dir, 'train')
         else:
-            root = os.path.join(opt.dataroot, 'test')
-            config_dir = os.path.join(opt.config_dir, 'test')
+            if opt.test_type == 'test_seen':
+                root = os.path.join(opt.dataroot, 'train')
+            elif opt.test_type == 'test_unseen':
+                root = os.path.join(opt.dataroot, 'test')
+            config_dir = os.path.join(opt.config_dir, opt.test_type)
+
         _, dataset_name = os.path.split(opt.dataroot)
 
         dataset = ImageFolder(root=root, config_dir=config_dir, dataset_name=dataset_name,
-                              transform=transform, fineSize=opt.fineSize)
+                              transform=transform, fineSize=opt.fineSize, no_permutation=not opt.isTrain)
 
         data_loader = torch.utils.data.DataLoader(
             dataset,
             batch_size=self.opt.batchSize,
-            shuffle=not self.opt.serial_batches,
+            shuffle=opt.isTrain,
             num_workers=int(self.opt.nThreads))
 
         self.dataset = dataset
@@ -123,12 +127,20 @@ class ReWeighted_Data(object):
         self.iter += 1
         if self.iter > self.max_dataset_size:
             raise StopIteration
-        style_imgs, content_imgs, gt_img = next(self.data_loader_iter)
-        return {'style_imgs': style_imgs, 'content_imgs': content_imgs, 'gt_img': gt_img}
+        try:
+            style_imgs, content_imgs, gt_img, standard_imgs = next(self.data_loader_iter)
+            return {'style_imgs': style_imgs, 'content_imgs': content_imgs, 'gt_img': gt_img, 'standard_imgs': standard_imgs}
+        except:
+            style_imgs, content_imgs, gt_img = next(self.data_loader_iter)
+            return {'style_imgs': style_imgs, 'content_imgs': content_imgs, 'gt_img': gt_img}
 
     def __next__(self):
         self.iter += 1
         if self.iter > self.max_dataset_size:
             raise StopIteration
-        style_imgs, content_imgs, gt_img = next(self.data_loader_iter)
-        return {'style_imgs': style_imgs, 'content_imgs': content_imgs, 'gt_img': gt_img}
+        try:
+            style_imgs, content_imgs, gt_img, standard_imgs = next(self.data_loader_iter)
+            return {'style_imgs': style_imgs, 'content_imgs': content_imgs, 'gt_img': gt_img, 'standard_imgs': standard_imgs}
+        except:
+            style_imgs, content_imgs, gt_img = next(self.data_loader_iter)
+            return {'style_imgs': style_imgs, 'content_imgs': content_imgs, 'gt_img': gt_img}

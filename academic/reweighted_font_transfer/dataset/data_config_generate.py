@@ -23,7 +23,8 @@ import numpy as np
 # 　style和content的关系表
 # 这个表应该是随机生成的，当前先固定下来
 style_content_related_map = {'style_name': '[content_name1, content_name2, ..., content_nameN]'}
-content_file_lists = ['000004', '000005', '000009']
+standard_file = '000004'
+content_file_lists = ['000004', '000004', '000004']
 
 
 # 随机生成一个字符
@@ -71,12 +72,18 @@ def generate_one_row(style_num=3, file_name=None):
     one_row.append(style_pair)
     one_row.append(content_pair)
     one_row.append(gt)
+    if standard_file:
+        standard_style_letter = []
+        for style_letter in style_pair:
+            standard_style_letter.append(style_letter.replace(style_letter.split('/')[0], standard_file))
+        # print(style_pair, standard_style_letter)
+        one_row.append(standard_style_letter)
     return one_row
 
 
 class Data_Config_Generate:
-    def __init__(self, each_style_num=4, each_config_num=1024,
-                 dataset_name = r'Capitals_colorGrad64',
+    def __init__(self, each_style_num=4, each_config_num=1024, style_num=3,
+                 dataset_name=r'Capitals_colorGrad64',
                  dataset_dir=r'/home/xiongbo/datasets/SEPARATE/Capitals_colorGrad64/train/',
                  config_dir=r'../config/train/',
                  iterate_dir=iterate_dir, generate_one_row=generate_one_row):
@@ -94,6 +101,8 @@ class Data_Config_Generate:
         self.crt_config_num = 0
         # 当前配置文件的索引
         self.crt_config_file_index = 0
+        # 每行数据有几个style字符
+        self.style_num = style_num
 
         self.generate_one_row = generate_one_row
 
@@ -110,12 +119,24 @@ class Data_Config_Generate:
         self.style_content_gt_list = []
 
     # 　生成每个font的训练数据
-    def deal_one_font(self, style_num=3, file_name=None):
-        _style_content_gt_list = self.generate_one_row(style_num=style_num, file_name=file_name)
-        for i in range(1, self.each_style_num):
-            s_c_g = self.generate_one_row(style_num=style_num, file_name=file_name)
-            while s_c_g in _style_content_gt_list:
+    def deal_one_font(self, style_num=4, file_name=None):
+        _style_content_gt_list = [self.generate_one_row(style_num=style_num, file_name=file_name)]
+        if self.each_style_num == 26:
+            s_c_g_st = _style_content_gt_list[0]
+            _style_content_gt_list = []
+            s, c, g, st = s_c_g_st[0], s_c_g_st[1], s_c_g_st[2], s_c_g_st[3]
+            content = g[0][-5]
+            for i in range(26):
+                crt_c = []
+                for _c in c:
+                    crt_c.append(_c.replace(content, chr(ord('A') + i)))
+                crt_s_c_g_st = [s, crt_c, [g[0].replace(content, chr(ord('A') + i))], st]
+                _style_content_gt_list.append(crt_s_c_g_st)
+        else:
+            for i in range(1, self.each_style_num):
                 s_c_g = self.generate_one_row(style_num=style_num, file_name=file_name)
+                while s_c_g in _style_content_gt_list:
+                    s_c_g = self.generate_one_row(style_num=style_num, file_name=file_name)
                 _style_content_gt_list.append(s_c_g)
         return _style_content_gt_list
 
@@ -129,7 +150,8 @@ class Data_Config_Generate:
     def deal_dir(self, path):
         _, style_name = os.path.split(path)
         self.crt_config_num += 1
-        self.style_content_gt_list.append(self.deal_one_font(file_name=style_name))
+        self.style_content_gt_list += self.deal_one_font(style_num=self.style_num, file_name=style_name)
+        # self.style_content_gt_list.append(self.deal_one_font(style_num=self.style_num, file_name=style_name))
         if self.crt_config_num == self.each_config_num:
             self.save_to_json()
 
@@ -139,8 +161,17 @@ class Data_Config_Generate:
 
 if __name__ == '__main__':
     # pc
-    # tmp = Data_Config_Generate()
-    # 93
+    each_style_num = 26 
+    each_config_num = 500 # 1024
+    style_num = 8
+    dataset_name = r'Capitals_colorGrad64'
+    # dataset_dir = r'/home/xiongbo/datasets/SEPARATE/Capitals_colorGrad64/train/'
     dataset_dir = r'/home/share/dataset/MCGAN/SEPARATE/Capitals_colorGrad64/train/'
-    tmp_93 = Data_Config_Generate(dataset_dir=dataset_dir)
-
+    config_dir = r'../config/train/'
+    iterate_dir = iterate_dir
+    tmp = Data_Config_Generate(each_style_num=each_style_num, each_config_num=each_config_num,
+                                style_num=style_num, dataset_dir=dataset_dir,
+                             config_dir=config_dir)
+    # 93
+    # dataset_dir = r'/home/share/dataset/MCGAN/SEPARATE/Capitals_colorGrad64/train/'
+    # tmp_93 = Data_Config_Generate(dataset_dir=dataset_dir, style_num=

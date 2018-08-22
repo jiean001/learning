@@ -10,10 +10,10 @@ BATCHSIZE=2
 NTHREAD=1
 
 NGF=64
-experiment_dir="reweighted_l_train_ngf64_0725"
-MODEL=reweighted_l
+experiment_dir="reweighted_lsgan_0812"
+MODEL=reweighted_lsgan
 MODEL_NETG=reweighted_gan
-COMMENT=reweighted_l
+COMMENT=reweighted_lsgan
 NORM=batch
 IN_NC=3
 O_NC=4
@@ -40,7 +40,8 @@ C_C_CONFIG=content_classifier.txt
 
 # continue train
 WHICH_EPOCH=14
-
+WHICH_EPOCH_D=0
+STYLE_IMG_NUM=8
 CONSTANT_COS=1
 
 if [ ! -d "${CHECKPOINTS}/${experiment_dir}" ]; then
@@ -74,5 +75,8 @@ CUDA_VISIBLE_DEVICES=${CUDA_ID} python ../controller/train_rew_gan.py --dataroot
                          --which_epoch $WHICH_EPOCH \
                          --beta1 $BETA1 --lr $LR \
                          --postConv \
-						 --save_epoch_freq $EPOCH_FREQ --niter $NITER --niter_decay $NITERD
+						 --save_epoch_freq $EPOCH_FREQ --niter $NITER --niter_decay $NITERD \
+						 --style_img_num $STYLE_IMG_NUM --which_epoch_D $WHICH_EPOCH_D \
+						 --use_gan --D_B --D_RGB
+
 						 # --serial_batches

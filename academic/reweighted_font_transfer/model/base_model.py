@@ -9,6 +9,7 @@
 
 import os
 import torch
+import json
 
 class BaseModel():
     def name(self):
@@ -19,7 +20,10 @@ class BaseModel():
         self.gpu_ids = opt.gpu_ids
         self.isTrain = opt.isTrain
         self.Tensor = torch.cuda.FloatTensor if self.gpu_ids else torch.Tensor
-        self.save_dir = os.path.join(opt.checkpoints_dir, opt.name)
+        if self.isTrain:
+            self.save_dir = os.path.join(opt.checkpoints_dir, opt.name)
+        else:
+            self.save_dir = os.path.join(opt.results_dir, opt.name)
 
     def set_input(self, input):
         self.input = input
@@ -89,12 +93,7 @@ class BaseModel():
 
         network2.load_state_dict(weights2)
 
-    # helper loading function that can be used by subclasses
-    def load_network(self, network, network_label, epoch_label, print_weights=False, ignore_BN=False):
-        save_filename = '%s_net_%s.pth' % (epoch_label, network_label)
-        save_path = os.path.join(self.save_dir, save_filename)
-        weights = torch.load(save_path)
-        # print weights
+    def load_base_network(self, network, weights, print_weights=False, ignore_BN=False):
         if ignore_BN:
             for key in weights.keys():
                 if key.endswith('running_mean'):
@@ -104,7 +103,25 @@ class BaseModel():
         if print_weights:
             for key in weights.keys():
                 print(key, 'pretrained, mean,std:', torch.mean(weights[key]), torch.std(weights[key]))
-        network.load_state_dict(weights)
+        if network:
+            network.load_state_dict(weights)
+
+    # helper loading function that can be used by subclasses
+    def load_network(self, network, network_label, epoch_label, config_file=None, print_weights=False, ignore_BN=False):
+        save_filename = '%s_net_%s.pth' % (epoch_label, network_label)
+        save_path = os.path.join(self.save_dir, save_filename)
+        weights = torch.load(save_path)
+        if not config_file:
+            self.load_base_network(network, weights, print_weights, ignore_BN)
+        else:
+            model_dict = network.state_dict()
+            # new_weights = {}
+            f = open(config_file, 'r')
+            S_C_dict = json.load(f)
+            for s_key in S_C_dict.keys():
+                model_dict[s_key] = weights[S_C_dict[s_key]]
+            # model_dict.update(new_weights)
+            self.load_base_network(network, model_dict, print_weights, ignore_BN)
 
     def update_learning_rate():
         pass

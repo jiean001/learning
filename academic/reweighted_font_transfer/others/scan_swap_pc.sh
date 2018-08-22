@@ -6,11 +6,12 @@ DATASET="/home/xiongbo/datasets/SEPARATE/${DATA}/"
 CHECKPOINTS=/home/xiongbo/results/luxb/reweighted_font_transfer
 CUDA_ID=0
 GPU_IDS=0
-BATCHSIZE=2
+BATCHSIZE=1
 NTHREAD=1
+NGF=16
 
-NGF=64
-experiment_dir="reweighted_l_train_ngf64_0725"
+WHICH_EPOCH=10
+experiment_dir="reweighted_l_train_ngf16"
 MODEL=reweighted_l
 MODEL_NETG=reweighted_gan
 COMMENT=reweighted_l
@@ -39,9 +40,7 @@ C_C_CONFIG=content_classifier.txt
 
 
 # continue train
-WHICH_EPOCH=14
-
-CONSTANT_COS=1
+WHICH_EPOCH=15
 
 if [ ! -d "${CHECKPOINTS}/${experiment_dir}" ]; then
 	mkdir "${CHECKPOINTS}/${experiment_dir}"
@@ -54,7 +53,7 @@ fi
 
 exec &> >(tee -a "$LOG")
 
-CUDA_VISIBLE_DEVICES=${CUDA_ID} python ../controller/train_rew_gan.py --dataroot ${DATASET} --name "${experiment_dir}"\
+CUDA_VISIBLE_DEVICES=${CUDA_ID} python ./scan_swap.py --dataroot ${DATASET} --name "${experiment_dir}"\
 						 --model $MODEL --which_model_net_Classifier Classifier_letter --which_model_netG $MODEL_NETG\
 						 --norm $NORM --input_nc $IN_NC --output_nc $O_NC --fineSize $FINESIZE --loadSize $LOADSIZE --use_dropout \
 						 --batchSize $BATCHSIZE  \
@@ -68,8 +67,8 @@ CUDA_VISIBLE_DEVICES=${CUDA_ID} python ../controller/train_rew_gan.py --dataroot
 						 --s_c_config $S_C_CONFIG \
 						 --c_c_config $C_C_CONFIG \
 						 --ngf $NGF \
-						 --constant_cos $CONSTANT_COS \
 						 --isTrain \
+						 --which_epoch $WHICH_EPOCH \
 						 --config_dir $CONFIG_DIR \
                          --which_epoch $WHICH_EPOCH \
                          --beta1 $BETA1 --lr $LR \

@@ -6,10 +6,11 @@ DATASET="/home/share/dataset/MCGAN/SEPARATE/${DATA}/"
 CHECKPOINTS=/home/luxb/results/luxb/reweighted_font_transfer
 CUDA_ID=1,0
 GPU_IDS=0,1
-BATCHSIZE=32
+BATCHSIZE=8
 NTHREAD=1
 
-experiment_dir="reweighted_l_train"
+NGF=64
+experiment_dir="reweighted_l_train_ngf64_0725"
 MODEL=reweighted_l
 MODEL_NETG=reweighted_gan
 COMMENT=reweighted_l
@@ -28,8 +29,19 @@ EMBEDDING_FREQ=50
 BETA1=0.5
 LR=0.0002
 
+# loader classifer
+LOADER_CLASSIFIER_EPOCH=60
+LOADER_CLASSIFIER_NAME=Classifier
+# 0:style, 1:content
+WHICH_NET_LOADER_CLASSIFIER=0
+S_C_CONFIG=style_classifier.txt
+C_C_CONFIG=content_classifier.txt
+
+
 # continue train
-WHICH_EPOCH=20
+WHICH_EPOCH=11
+
+CONSTANT_COS=1
 
 if [ ! -d "${CHECKPOINTS}/${experiment_dir}" ]; then
 	mkdir "${CHECKPOINTS}/${experiment_dir}"
@@ -50,6 +62,13 @@ CUDA_VISIBLE_DEVICES=${CUDA_ID} python ../controller/train_rew_gan.py --dataroot
 						 --use_tensorboardX --embedding_freq $EMBEDDING_FREQ \
 						 --nThreads $NTHREAD \
 						 --ftX_comment $COMMENT \
+						 --loader_classifier_epoch $LOADER_CLASSIFIER_EPOCH \
+						 --loader_classifier_name $LOADER_CLASSIFIER_NAME \
+						 --which_net_loader_classifier $WHICH_NET_LOADER_CLASSIFIER \
+						 --s_c_config $S_C_CONFIG \
+						 --c_c_config $C_C_CONFIG \
+						 --ngf $NGF \
+						 --constant_cos $CONSTANT_COS \
 						 --isTrain \
 						 --config_dir $CONFIG_DIR \
                          --which_epoch $WHICH_EPOCH \
@@ -57,3 +76,4 @@ CUDA_VISIBLE_DEVICES=${CUDA_ID} python ../controller/train_rew_gan.py --dataroot
                          --postConv \
 						 --save_epoch_freq $EPOCH_FREQ --niter $NITER --niter_decay $NITERD
 						 # --serial_batches
+

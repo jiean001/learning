@@ -22,7 +22,7 @@ W = 64
 img_A_RGB = rew_transform(default_img_loader(path=r'./000000/A.png'))
 img_B_RGB = rew_transform(default_img_loader(path=r'./000000/B.png'))
 img_F_RGB = rew_transform(default_img_loader(path=r'./000000/C.png'))
-img_E_RGB = rew_transform(default_img_loader(path=r'./000001/E.png'))  # [0].unsqueeze(0)
+img_E_RGB = rew_transform(default_img_loader(path=r'./000000/A.png'))  # [0].unsqueeze(0)
 
 img_A_B = get_binary_img(img_A_RGB)
 img_B_B = get_binary_img(img_B_RGB)
@@ -82,7 +82,8 @@ def mixed_reweigted_feature_map(SC_style_feature_map, SC_content_feature_map, SC
             #  乘以constant_cos*content模长的cos距离
             output_c = constant_cos * output_c / mode
             output_c = softmax(output_c)
-            print(output_c)
+            if c == 0:
+                print(output_c)
 
             mixed_fm_c_tmp = sc_s1_fm_rgb_c[0] * output_c[0][0] + \
                              sc_s1_fm_rgb_c[1] * output_c[0][1] + sc_s1_fm_rgb_c[2] * output_c[0][2]

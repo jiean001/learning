@@ -89,7 +89,6 @@ class ImageFolder(data.Dataset):
     def __init__(self, root, config_dir, dataset_name, transform=None,
                  loader=default_img_loader, fineSize=0,
                  no_permutation=False):
-        print(config_dir)
         imgs = make_dataset(config_dir, dataset_name)
         if len(imgs) == 0:
             raise (RuntimeError("Found 0 images in: " + root + ', ' + config_dir + "\n"
@@ -106,6 +105,7 @@ class ImageFolder(data.Dataset):
 
     def __getitem__(self, index):
         style_content_gt = self.imgs[index]
+        lens = len(style_content_gt)
         style_list = style_content_gt[0]
         content_list = style_content_gt[1]
         gt_img_ = style_content_gt[2]
@@ -113,6 +113,12 @@ class ImageFolder(data.Dataset):
         style_imgs = get_style_tensor(self.root, style_list, self.loader, self.transform, fineSize=self.fineSize)
         content_imgs = get_content_tensor(self.root, content_list, self.loader, self.transform, fineSize=self.fineSize)
         gt_img = get_gt_tensor(self.root, gt_img_, self.loader, self.transform, fineSize=self.fineSize)
+
+        if lens > 3:
+            standard_img_list = style_content_gt[3]
+            standard_imgs = get_binary_img(get_style_tensor(self.root, standard_img_list, self.loader, self.transform, fineSize=self.fineSize))
+            return style_imgs, content_imgs, gt_img, standard_imgs
+
         return style_imgs, content_imgs, gt_img
 
     def __len__(self):

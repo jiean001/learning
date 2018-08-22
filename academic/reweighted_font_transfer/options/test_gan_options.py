@@ -7,12 +7,12 @@
 # Author: jiean001
 #########################################################
 
-from .train_options import TrainOptions
+from .test_options import TestOptions
 
 # the option of Classifier
-class TrainGANOptions(TrainOptions):
+class TestGANOptions(TestOptions):
     def initialize(self):
-        TrainOptions.initialize(self)
+        TestOptions.initialize(self)
         self.parser.add_argument('--style_num', type=int, default=3, help='# of iter at starting learning rate')
         self.parser.add_argument('--constant_cos', type=int, default=2, help='# of iter at starting learning rate')
         self.parser.add_argument('--ndf', type=int, default=64, help='# of iter at starting learning rate')
@@ -29,19 +29,9 @@ class TrainGANOptions(TrainOptions):
         self.parser.add_argument('--no_lsgan', action='store_true', help='use dropout for the generator')
         self.parser.add_argument('--noisy_disc', action='store_true',
                                  help='add noise to the discriminator target labels')
-
         # 添加预训练的结果 LOADER_CLASSIFIER_EPOCH LOADER_CLASSIFIER_NAME LOADER_CLASSIFIER_NAME
         self.parser.add_argument('--loader_classifier_epoch', type=int, default=60, help='# of iter at starting learning rate')
         self.parser.add_argument('--loader_classifier_name', type=str, default='Classifier', help='# of iter at starting learning rate')
         self.parser.add_argument('--which_net_loader_classifier', type=str, default='0,1', help='# of iter at starting learning rate')
         self.parser.add_argument('--s_c_config', type=str, default='style_classifier.txt', help='# of iter at starting learning rate')
         self.parser.add_argument('--c_c_config', type=str, default='content_classifier.txt', help='# of iter at starting learning rate')
-
-        # D
-        self.parser.add_argument('--style_img_num', type=int, default=8, help='# of iter at starting learning rate')
-        self.parser.add_argument('--which_epoch_D', type=int, default=0, help='# of iter at starting learning rate')
-        self.parser.add_argument('--use_gan', action='store_true', help='use dropout for the generator')
-        self.parser.add_argument('--D_B', action='store_true', help='use dropout for the generator')
-        self.parser.add_argument('--D_RGB', action='store_true', help='use dropout for the generator')
-
-        self.isTrain = True

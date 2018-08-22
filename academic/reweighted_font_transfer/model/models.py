@@ -1,9 +1,11 @@
-################################################################################
-# MC-GAN
-# Modified from https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix
-# By Samaneh Azadi
-################################################################################
+#!/usr/bin/python
+# -*- coding: UTF-8 -*-
 
+#########################################################
+# Create on 2018-08-10
+#
+# Author: jiean001
+#########################################################
 
 def create_model(opt):
     model = None
@@ -17,6 +19,9 @@ def create_model(opt):
     elif opt.model == 'reweighted_l':
         from .reweighted_L_model import Reweighted_L
         model = Reweighted_L()
+    elif opt.model == 'reweighted_lsgan':  # 包含了l和gan的case
+        from .reweighted_lsgan_model import Reweighted_LSGAN
+        model = Reweighted_LSGAN()
     else:
         raise ValueError("Model [%s] not recognized." % opt.model)
     model.initialize(opt)

@@ -42,7 +42,7 @@ def get_norm_layer(norm_type):
 
 # 卷积层block
 def conv_norm_relu_module(norm_layer, input_nc, ngf, kernel_size, padding, stride=1, relu='relu'):
-    model = [nn.Conv2d(input_nc, ngf, kernel_size=kernel_size, padding=padding,stride=stride)]
+    model = [nn.Conv2d(input_nc, ngf, kernel_size=kernel_size, padding=padding, stride=stride)]
     if norm_layer:
         model += [norm_layer(ngf)]
 
@@ -310,20 +310,77 @@ class Generator_Reweighted(nn.Module):
                 output_c = conv2d(input)
                 output_c = output_c.squeeze(1).squeeze(1).transpose(0, 1)
 
-                # 计算style的模长
-                mode1 = torch.dist(input[0], zeros, 2).view(1, 1)
-                mode2 = torch.dist(input[1], zeros, 2).view(1, 1)
-                mode3 = torch.dist(input[2], zeros, 2).view(1, 1)
-                mode = torch.cat((mode1, mode2, mode3), 1)
+                style_num = input.size(0)
+                mode = torch.dist(input[0], zeros, 2).view(1, 1)
+                for i in range(1, style_num):
+                    mode = torch.cat((mode, torch.dist(input[i], zeros, 2).view(1, 1)), 1)
+
+                '''
+                if style_num == 3:
+                    # 计算style的模长
+                    mode1 = torch.dist(input[0], zeros, 2).view(1, 1)
+                    mode2 = torch.dist(input[1], zeros, 2).view(1, 1)
+                    mode3 = torch.dist(input[2], zeros, 2).view(1, 1)
+                    mode = torch.cat((mode1, mode2, mode3), 1)
+                elif style_num == 4:
+                    mode1 = torch.dist(input[0], zeros, 2).view(1, 1)
+                    mode2 = torch.dist(input[1], zeros, 2).view(1, 1)
+                    mode3 = torch.dist(input[2], zeros, 2).view(1, 1)
+                    mode4 = torch.dist(input[3], zeros, 2).view(1, 1)
+                    mode = torch.cat((mode1, mode2, mode3, mode4), 1)
+                elif style_num == 5:
+                    mode1 = torch.dist(input[0], zeros, 2).view(1, 1)
+                    mode2 = torch.dist(input[1], zeros, 2).view(1, 1)
+                    mode3 = torch.dist(input[2], zeros, 2).view(1, 1)
+                    mode4 = torch.dist(input[3], zeros, 2).view(1, 1)
+                    mode5 = torch.dist(input[4], zeros, 2).view(1, 1)
+                    mode = torch.cat((mode1, mode2, mode3, mode4, mode5), 1)
+                elif style_num == 6:
+                    mode1 = torch.dist(input[0], zeros, 2).view(1, 1)
+                    mode2 = torch.dist(input[1], zeros, 2).view(1, 1)
+                    mode3 = torch.dist(input[2], zeros, 2).view(1, 1)
+                    mode4 = torch.dist(input[3], zeros, 2).view(1, 1)
+                    mode5 = torch.dist(input[4], zeros, 2).view(1, 1)
+                    mode6 = torch.dist(input[5], zeros, 2).view(1, 1)
+                    mode = torch.cat((mode1, mode2, mode3, mode4, mode5, mode6), 1)
+                elif style_num == 7:
+                    mode1 = torch.dist(input[0], zeros, 2).view(1, 1)
+                    mode2 = torch.dist(input[1], zeros, 2).view(1, 1)
+                    mode3 = torch.dist(input[2], zeros, 2).view(1, 1)
+                    mode4 = torch.dist(input[3], zeros, 2).view(1, 1)
+                    mode5 = torch.dist(input[4], zeros, 2).view(1, 1)
+                    mode6 = torch.dist(input[5], zeros, 2).view(1, 1)
+                    mode7 = torch.dist(input[6], zeros, 2).view(1, 1)
+                    mode = torch.cat((mode1, mode2, mode3, mode4, mode5, mode6, mode7), 1)
+                elif style_num == 8:
+                    mode1 = torch.dist(input[0], zeros, 2).view(1, 1)
+                    mode2 = torch.dist(input[1], zeros, 2).view(1, 1)
+                    mode3 = torch.dist(input[2], zeros, 2).view(1, 1)
+                    mode4 = torch.dist(input[3], zeros, 2).view(1, 1)
+                    mode5 = torch.dist(input[4], zeros, 2).view(1, 1)
+                    mode6 = torch.dist(input[5], zeros, 2).view(1, 1)
+                    mode7 = torch.dist(input[6], zeros, 2).view(1, 1)
+                    mode8 = torch.dist(input[7], zeros, 2).view(1, 1)
+                    mode = torch.cat((mode1, mode2, mode3, mode4, mode5, mode6, mode7, mode8), 1)
+                '''
+
                 # mode_content = torch.dist(sc_c_fm_c, zeros, 2).view(1, 1)
                 # output_c /= mode_content
                 # print(mode_content)
+
                 #  乘以constant_cos*content模长的cos距离
                 output_c = self.constant_cos * output_c / mode
                 output_c = softmax(output_c)
 
-                mixed_fm_c_tmp = sc_s1_fm_rgb_c[0] * output_c[0][0] + \
-                                 sc_s1_fm_rgb_c[1] * output_c[0][1] + sc_s1_fm_rgb_c[2] * output_c[0][2]
+                if c == -1 and b == batch_size-1:
+                    print(output_c)
+
+                mixed_fm_c_tmp = 0
+                for i in range(0, style_num):
+                    mixed_fm_c_tmp += sc_s1_fm_rgb_c[i] * output_c[0][i]
+
+                # mixed_fm_c_tmp = sc_s1_fm_rgb_c[0] * output_c[0][0] + \
+                                 # sc_s1_fm_rgb_c[1] * output_c[0][1] + sc_s1_fm_rgb_c[2] * output_c[0][2]
                 if c == 0:
                     mixed_fm_c = mixed_fm_c_tmp.unsqueeze(0)
                 else:
@@ -396,16 +453,19 @@ class Generator_Reweighted(nn.Module):
 
     # input_content : [batch, channel, H, W]
     # input_style : [batch, num, channel, H, W]
-    def forward(self, input_style, input_content):
+    def forward(self, input_style, input_content, input_standard=None):
         # style rgb
         input_style = input_style.transpose(0, 1)
         num, _, _, _, _ = input_style.size()
 
         # style binary
-        input_style_b = get_binary_img(input_style)
+        if input_standard is not None:
+            input_style_b = input_standard.transpose(0, 1)
+        else:
+            input_style_b = get_binary_img(input_style)
 
         # todo
-        assert num == 3, 'style number != 3'
+        # assert num == 3, 'style number != 3'
         SC_style_feature_map_rgb = self.forward_Style(input_style=input_style[0])[0].unsqueeze(2)
         batch_size, channel, _, H, W = SC_style_feature_map_rgb.size()
         SC_style_feature_map = self.forward_Style(input_style=input_style_b[0].detach())[0].unsqueeze(2)
