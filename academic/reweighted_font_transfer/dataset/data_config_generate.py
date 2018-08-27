@@ -23,8 +23,10 @@ import numpy as np
 # 　style和content的关系表
 # 这个表应该是随机生成的，当前先固定下来
 style_content_related_map = {'style_name': '[content_name1, content_name2, ..., content_nameN]'}
-standard_file = '000004'
-content_file_lists = ['000004', '000004', '000004']
+# standard_file = '000004'
+standard_file = '001234'
+content_file_lists = [standard_file, standard_file, standard_file]
+# content_file_lists = ['000004', '000004', '000004']
 
 
 # 随机生成一个字符
@@ -121,7 +123,7 @@ class Data_Config_Generate:
     # 　生成每个font的训练数据
     def deal_one_font(self, style_num=4, file_name=None):
         _style_content_gt_list = [self.generate_one_row(style_num=style_num, file_name=file_name)]
-        if self.each_style_num == 26:
+        if self.each_style_num >= 26:
             s_c_g_st = _style_content_gt_list[0]
             _style_content_gt_list = []
             s, c, g, st = s_c_g_st[0], s_c_g_st[1], s_c_g_st[2], s_c_g_st[3]
@@ -132,6 +134,21 @@ class Data_Config_Generate:
                     crt_c.append(_c.replace(content, chr(ord('A') + i)))
                 crt_s_c_g_st = [s, crt_c, [g[0].replace(content, chr(ord('A') + i))], st]
                 _style_content_gt_list.append(crt_s_c_g_st)
+            if each_style_num > 26:
+                for j in range(each_style_num - 26):
+                    i = 25
+                    crt_c = []
+                    for _c in c:
+                        crt_c.append(_c.replace(content, chr(ord('A') + i)))
+                    crt_s_c_g_st = [s, crt_c, [g[0].replace(content, chr(ord('A') + i))], st]
+                    _style_content_gt_list.append(crt_s_c_g_st)
+                '''
+                for i in range(each_style_num-26):
+                    s_c_g = self.generate_one_row(style_num=style_num, file_name=file_name)
+                    while s_c_g in _style_content_gt_list:
+                        s_c_g = self.generate_one_row(style_num=style_num, file_name=file_name)
+                    _style_content_gt_list.append(s_c_g)
+                '''
         else:
             for i in range(1, self.each_style_num):
                 s_c_g = self.generate_one_row(style_num=style_num, file_name=file_name)
@@ -161,12 +178,15 @@ class Data_Config_Generate:
 
 if __name__ == '__main__':
     # pc
-    each_style_num = 26 
+    each_style_num = 30
     each_config_num = 500 # 1024
     style_num = 8
     dataset_name = r'Capitals_colorGrad64'
-    # dataset_dir = r'/home/xiongbo/datasets/SEPARATE/Capitals_colorGrad64/train/'
+    # pc
+    # dataset_dir = r'/home/xiongbo/datasets/SEPARATE/Capitals_colorGrad64/test/'
+    # 93 218
     dataset_dir = r'/home/share/dataset/MCGAN/SEPARATE/Capitals_colorGrad64/train/'
+
     config_dir = r'../config/train/'
     iterate_dir = iterate_dir
     tmp = Data_Config_Generate(each_style_num=each_style_num, each_config_num=each_config_num,

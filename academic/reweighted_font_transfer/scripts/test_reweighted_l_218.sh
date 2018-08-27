@@ -4,16 +4,17 @@
 DATA=Capitals_colorGrad64
 DATASET="/home/share/dataset/MCGAN/SEPARATE/${DATA}/"
 CHECKPOINTS=/home/luxb/results/luxb/reweighted_font_transfer
-CUDA_ID=1,0
-GPU_IDS=0,1
-BATCHSIZE=8
+CUDA_ID=$2
+GPU_IDS=0
+BATCHSIZE=6
 NTHREAD=1
+test_type=$1
 
 NGF=64
-experiment_dir="reweighted_lsgan_0825"
-MODEL=reweighted_lsgan
+experiment_dir="saved_model_0815"
+MODEL=reweighted_l
 MODEL_NETG=reweighted_gan
-COMMENT=reweighted_lsgan
+COMMENT=reweighted_l
 NORM=batch
 IN_NC=3
 O_NC=4
@@ -39,23 +40,25 @@ C_C_CONFIG=content_classifier.txt
 
 
 # continue train
-WHICH_EPOCH=19
-WHICH_EPOCH_D=19
-STYLE_IMG_NUM=8
+WHICH_EPOCH=18
+
 CONSTANT_COS=1
 
-if [ ! -d "${CHECKPOINTS}/${experiment_dir}" ]; then
-	mkdir "${CHECKPOINTS}/${experiment_dir}"
+# test
+RESULT_DIR=/home/luxb/test/luxb/reweighted_font_transfer
+
+if [ ! -d "${RESULT_DIR}/${experiment_dir}" ]; then
+	mkdir "${RESULT_DIR}/${experiment_dir}"
 fi
 
-LOG="${CHECKPOINTS}/${experiment_dir}/output.txt"
+LOG="${RESULT_DIR}/${experiment_dir}/${test_type}_output.txt"
 if [ -f $LOG ]; then
 	rm $LOG
 fi
 
 exec &> >(tee -a "$LOG")
 
-CUDA_VISIBLE_DEVICES=${CUDA_ID} python ../controller/train_rew_gan.py --dataroot ${DATASET} --name "${experiment_dir}"\
+CUDA_VISIBLE_DEVICES=${CUDA_ID} python ../controller/test_rew_gan.py --dataroot ${DATASET} --name "${experiment_dir}"\
 						 --model $MODEL --which_model_net_Classifier Classifier_letter --which_model_netG $MODEL_NETG\
 						 --norm $NORM --input_nc $IN_NC --output_nc $O_NC --fineSize $FINESIZE --loadSize $LOADSIZE --use_dropout \
 						 --batchSize $BATCHSIZE  \
@@ -70,13 +73,7 @@ CUDA_VISIBLE_DEVICES=${CUDA_ID} python ../controller/train_rew_gan.py --dataroot
 						 --c_c_config $C_C_CONFIG \
 						 --ngf $NGF \
 						 --constant_cos $CONSTANT_COS \
-						 --isTrain \
+						 --results_dir $RESULT_DIR \
 						 --config_dir $CONFIG_DIR \
                          --which_epoch $WHICH_EPOCH \
-                         --beta1 $BETA1 --lr $LR \
-                         --postConv \
-						 --save_epoch_freq $EPOCH_FREQ --niter $NITER --niter_decay $NITERD \
-						 --style_img_num $STYLE_IMG_NUM --which_epoch_D $WHICH_EPOCH_D \
-						 --use_gan --D_B --D_RGB
-
-						 # --serial_batches
+                         --postConv --test_type $test_type\

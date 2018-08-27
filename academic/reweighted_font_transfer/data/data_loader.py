@@ -44,7 +44,7 @@ class ReWeighted_DataLoader(BaseDataLoader):
         else:
             if opt.test_type == 'test_seen':
                 root = os.path.join(opt.dataroot, 'train')
-            elif opt.test_type == 'test_unseen':
+            elif opt.test_type.startswith('test_unseen'):
                 root = os.path.join(opt.dataroot, 'test')
             config_dir = os.path.join(opt.config_dir, opt.test_type)
 

@@ -28,7 +28,7 @@ class Reweighted_LSGAN(BaseModel):
 
     def initialize(self, opt):
         BaseModel.initialize(self, opt)
-        self.save_imgs_dir = os.path.join(self.save_dir, 'imgs')
+        self.save_imgs_dir = os.path.join(self.save_dir, opt.test_type)
         mkdir(self.save_imgs_dir)
 
         self.isTrain = opt.isTrain

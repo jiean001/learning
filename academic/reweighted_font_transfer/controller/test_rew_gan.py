@@ -30,13 +30,15 @@ tb_v = TB_Visualizer(log_dir=opt.log_dir, comment=opt.ftX_comment, use_tensorboa
 
 for i, data in enumerate(dataset):
     iter_start_time = time.time()
+    # print(model.get_save_imgs_dir())
+    # exit()
     model.set_input(data)
     model.test()
     errors = model.get_current_errors()
     t = (time.time() - iter_start_time)
     print_current_errors(epoch=0, i=i, errors=errors, t=t)
     tb_v.add_loss(errors=errors, scalar_x=i)
-    print_imgs(data, '%s/%04d_%04d.png' % (model.get_save_imgs_dir(), i/13, i%13),
+    print_imgs(data, '%s/%04d_%04d.png' % (model.get_save_imgs_dir(), i/5, i%5),
                model.get_crt_generate_img().data, model.get_crt_generate_img_b().data, batch_size=None)
     '''
     # save to tensorboard

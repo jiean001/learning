@@ -11,7 +11,7 @@ NTHREAD=1
 test_type=$1
 
 NGF=64
-experiment_dir="reweighted_l_train_ngf64_0725"
+experiment_dir="saved_model_0815"
 MODEL=reweighted_l
 MODEL_NETG=reweighted_gan
 COMMENT=reweighted_l
@@ -40,7 +40,7 @@ C_C_CONFIG=content_classifier.txt
 
 
 # continue train
-WHICH_EPOCH=20
+WHICH_EPOCH=18
 
 CONSTANT_COS=1
 

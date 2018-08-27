@@ -4,9 +4,9 @@
 DATA=Capitals_colorGrad64
 DATASET="/home/share/dataset/MCGAN/SEPARATE/${DATA}/"
 CHECKPOINTS=/home/luxb/results/luxb/reweighted_font_transfer
-CUDA_ID=1,0
-GPU_IDS=0,1
-BATCHSIZE=8
+CUDA_ID=1,0,2,3
+GPU_IDS=0,1,2,3
+BATCHSIZE=16
 NTHREAD=1
 
 NGF=64

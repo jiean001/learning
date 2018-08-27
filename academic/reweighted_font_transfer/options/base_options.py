@@ -78,13 +78,13 @@ class BaseOptions():
             self.opt.log_dir = os.path.join(self.opt.checkpoints_dir, self.opt.name, self.opt.log_dir)
             expr_dir = os.path.join(self.opt.checkpoints_dir, self.opt.name)
         else:
-            self.opt.log_dir = os.path.join(self.opt.results_dir, self.opt.name, self.opt.log_dir)
+            self.opt.log_dir = os.path.join(self.opt.results_dir, self.opt.name, '%s_%s' %(self.opt.test_type, self.opt.log_dir))
             expr_dir = os.path.join(self.opt.results_dir, self.opt.name)
 
         # save to the disk
         mkdirs(expr_dir)
         mkdirs(self.opt.log_dir)
-        file_name = os.path.join(expr_dir, 'opt.txt')
+        file_name = os.path.join(expr_dir, '%s_opt.txt' %(self.opt.test_type))
         with open(file_name, 'wt') as opt_file:
             opt_file.write('------------ Options -------------\n')
             for k, v in sorted(args.items()):

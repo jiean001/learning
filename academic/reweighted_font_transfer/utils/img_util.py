@@ -86,7 +86,7 @@ def print_imgs(data_dict, out_name, generate_imgs=None, generate_imgs_b=None, ba
     else:
         batch_size = _batch_size
     img_num = imgs.size(0)
-    row_num = img_num / batch_size
+    row_num = img_num // batch_size
     vutils.save_image(imgs, out_name, nrow=row_num)
 
 

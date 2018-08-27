@@ -65,11 +65,13 @@ if __name__ == '__main__':
     # TOGETHER...
     # pc
     # source_dir = r'/home/xiongbo/datasets/TOGETHER'
-    # 218
+    # 218,93
     # source_dir = r'/home/share/dataset/MCGAN/TOGETHER'
     # mcgan = Format_Pytorch_DataSet_T(source_dir=source_dir)
 
     # Separate...
     # pc
-    source_dir = r'/home/xiongbo/datasets/SEPARATE/'
+    # source_dir = r'/home/xiongbo/datasets/SEPARATE/'
+    # 218,93
+    source_dir = r'/home/share/dataset/MCGAN/SEPARATE'
     Format_Pytorch_DataSet_S(source_dir=source_dir)
